@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>shivclassroom - Safe Emoji Check-in</title>
+    <!-- Google Fonts: Outfit for friendly educational aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome or Lucide for Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Canvas Confetti for celebrations -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <!-- Supabase JS Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8/dist/umd/supabase.js"></script>
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- App Background Shapes -->
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+
+    <!-- Navigation Header -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="logo-area" onclick="app.navigateHome()">
+                <div class="logo-icon">🏫</div>
+                <span class="logo-text">shiv<span>classroom</span></span>
+            </div>
+            <div class="header-actions">
+                <!-- Theme Toggle -->
+                <button class="icon-btn" id="theme-toggle" title="Toggle Theme">
+                    <i data-lucide="moon"></i>
+                </button>
+                <!-- Supabase Config Status/Button -->
+                <button class="btn btn-outline btn-sm btn-icon" id="config-btn" title="Supabase Database Configuration">
+                    <i data-lucide="database"></i>
+                    <span class="btn-text">DB Config</span>
+                </button>
+                <!-- User Profile & Log Out -->
+                <div class="user-profile-menu hidden" id="user-menu">
+                    <div class="user-badge">
+                        <span class="role-tag" id="user-role-badge">Student</span>
+                        <span class="user-email" id="user-email-display">student@school.com</span>
+                    </div>
+                    <button class="btn btn-danger btn-sm btn-icon" id="logout-btn">
+                        <i data-lucide="log-out"></i>
+                        <span>Log Out</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="app-main">
+        <!-- Toast Notification Container -->
+        <div id="toast-container" class="toast-container"></div>
+
+        <!-- 1. LANDING / LOADING VIEW -->
+        <section id="view-loading" class="view-section active">
+            <div class="loader-card">
+                <div class="spinner"></div>
+                <h2>Preparing classroom...</h2>
+                <p>Connecting to secure services...</p>
+            </div>
+        </section>
+
+        <!-- 2. SUPABASE CONFIGURATION VIEW -->
+        <section id="view-config" class="view-section hidden">
+            <div class="card config-card">
+                <div class="card-header text-center">
+                    <div class="card-icon">⚡</div>
+                    <h1>Supabase Setup</h1>
+                    <p class="subtitle">Connect to your Supabase instance to enable Auth, Database, and Realtime features.</p>
+                </div>
+                <form id="config-form" class="config-form">
+                    <div class="form-group">
+                        <label for="config-url">Supabase Project URL</label>
+                        <input type="url" id="config-url" placeholder="https://your-project.supabase.co" required>
+                        <small class="form-help">Found in Project Settings > API > Project URL</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="config-anon-key">Supabase Anon Public Key</label>
+                        <input type="password" id="config-anon-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
+                        <small class="form-help">Found in Project Settings > API > anon public key</small>
+                    </div>
+                    <div class="info-box">
+                        <i data-lucide="info"></i>
+                        <p>Credentials are securely stored locally in your browser's local storage and never sent to any third party.</p>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-block">Save & Connect</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- 3. AUTHENTICATION VIEW -->
+        <section id="view-auth" class="view-section hidden">
+            <div class="auth-container">
+                <div class="auth-card">
+                    <div class="auth-header">
+                        <h2>Welcome to shivclassroom</h2>
+                        <p>The safe space to share your understanding.</p>
+                    </div>
+
+                    <!-- Auth Tabs -->
+                    <div class="auth-tabs">
+                        <button class="auth-tab active" data-tab="login">Log In</button>
+                        <button class="auth-tab" data-tab="signup">Sign Up</button>
+                    </div>
+
+                    <!-- Login Form -->
+                    <form id="login-form" class="auth-form active">
+                        <div class="form-group">
+                            <label for="login-email">School Email</label>
+                            <div class="input-icon-wrapper">
+                                <i data-lucide="mail"></i>
+                                <input type="email" id="login-email" placeholder="you@school.edu" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Password</label>
+                            <div class="input-icon-wrapper">
+                                <i data-lucide="lock"></i>
+                                <input type="password" id="login-password" placeholder="••••••••" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Log In</button>
+                    </form>
+
+                    <!-- Signup Form -->
+                    <form id="signup-form" class="auth-form">
+                        <div class="form-group">
+                            <label>Choose Your Role</label>
+                            <div class="role-selector">
+                                <label class="role-option">
+                                    <input type="radio" name="signup-role" value="student" checked>
+                                    <div class="role-card">
+                                        <div class="role-icon">✏️</div>
+                                        <h3>Student</h3>
+                                        <p>Join classrooms and share feedback.</p>
+                                    </div>
+                                </label>
+                                <label class="role-option">
+                                    <input type="radio" name="signup-role" value="teacher">
+                                    <div class="role-card">
+                                        <div class="role-icon">🍎</div>
+                                        <h3>Teacher</h3>
+                                        <p>Create classrooms and view analytics.</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="signup-email">School Email</label>
+                            <div class="input-icon-wrapper">
+                                <i data-lucide="mail"></i>
+                                <input type="email" id="signup-email" placeholder="you@school.edu" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="signup-password">Password</label>
+                            <div class="input-icon-wrapper">
+                                <i data-lucide="lock"></i>
+                                <input type="password" id="signup-password" minlength="6" placeholder="Min. 6 characters" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. STUDENT DASHBOARD (HOME) -->
+        <section id="view-student-home" class="view-section hidden">
+            <div class="dashboard-grid">
+                <!-- Join Classroom Card -->
+                <div class="card join-card animate-fade-in">
+                    <div class="card-header text-center">
+                        <div class="card-illustration">🙋‍♂️🎒</div>
+                        <h2>Enter a Classroom Code</h2>
+                        <p>Ask your teacher for the private code to join the class.</p>
+                    </div>
+                    <form id="join-class-form" class="join-form">
+                        <div class="code-input-group">
+                            <input type="text" id="class-code-input" placeholder="e.g., MATH101" maxlength="15" autocomplete="off" required>
+                            <button type="submit" class="btn btn-primary btn-icon">
+                                <span>Join Class</span>
+                                <i data-lucide="arrow-right"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Recent Classes -->
+                <div class="card recent-classes-card animate-fade-in delay-100">
+                    <div class="card-header">
+                        <h3><i data-lucide="history"></i> Recent Classrooms</h3>
+                    </div>
+                    <div class="recent-list-container">
+                        <div class="empty-state" id="student-recent-empty">
+                            <p>No recent classrooms found. Enter a code above to get started!</p>
+                        </div>
+                        <div class="recent-grid hidden" id="student-recent-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. STUDENT CLASSROOM VIEW -->
+        <section id="view-student-class" class="view-section hidden">
+            <div class="classroom-header-card">
+                <button class="btn btn-outline btn-sm btn-icon" onclick="app.navigateHome()">
+                    <i data-lucide="arrow-left"></i>
+                    <span>Back to Home</span>
+                </button>
+                <div class="classroom-info">
+                    <div class="status-indicator live">LIVE</div>
+                    <h1 id="student-class-name">Class 6 - Biology</h1>
+                    <span class="class-code-pill" id="student-class-code-display">Code: BIO6</span>
+                </div>
+            </div>
+
+            <!-- Emoji Check-in Panel -->
+            <div class="card emoji-panel-card animate-fade-in">
+                <div class="card-header text-center">
+                    <h2>How are you feeling about the material right now?</h2>
+                    <p class="subtitle">Your check-in response is safe and helps your teacher adapt the pace.</p>
+                </div>
+
+                <div class="emoji-selector-grid">
+                    <button class="emoji-feedback-btn" data-emoji="😎" data-label="Got it! / Understood">
+                        <span class="emoji-glyph">😎</span>
+                        <span class="emoji-text">Got It!</span>
+                        <span class="emoji-desc">Understood everything</span>
+                    </button>
+                    <button class="emoji-feedback-btn" data-emoji="🤔" data-label="A bit confused / Need help">
+                        <span class="emoji-glyph">🤔</span>
+                        <span class="emoji-text">Bit Confused</span>
+                        <span class="emoji-desc">Need clarification</span>
+                    </button>
+                    <button class="emoji-feedback-btn" data-emoji="🤯" data-label="Too hard / Mind blown">
+                        <span class="emoji-glyph">🤯</span>
+                        <span class="emoji-text">Too Hard</span>
+                        <span class="emoji-desc">Feeling overwhelmed</span>
+                    </button>
+                    <button class="emoji-feedback-btn" data-emoji="😴" data-label="Bored / Need change">
+                        <span class="emoji-glyph">😴</span>
+                        <span class="emoji-text">Bored</span>
+                        <span class="emoji-desc">Need a change of pace</span>
+                    </button>
+                    <button class="emoji-feedback-btn" data-emoji="🙋‍♂️" data-label="Have a question">
+                        <span class="emoji-glyph">🙋‍♂️</span>
+                        <span class="emoji-text">Question</span>
+                        <span class="emoji-desc">I have a question</span>
+                    </button>
+                </div>
+
+                <!-- Last Submitted Status -->
+                <div class="feedback-status-footer" id="feedback-status">
+                    <div class="status-placeholder">Click an emoji above to submit your live check-in!</div>
+                    <!-- Dynamic state: success, loading, etc. -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. TEACHER DASHBOARD (HOME) -->
+        <section id="view-teacher-home" class="view-section hidden">
+            <div class="dashboard-grid teacher-grid">
+                <!-- Create Class Card -->
+                <div class="card create-class-card animate-fade-in">
+                    <div class="card-header">
+                        <h2>Create Private Classroom</h2>
+                        <p class="subtitle">Set up a new safe feedback zone for your students.</p>
+                    </div>
+                    <form id="create-class-form" class="create-class-form">
+                        <div class="form-group">
+                            <label for="create-class-name">Classroom Name</label>
+                            <input type="text" id="create-class-name" placeholder="e.g., Class 6 - Biology" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="create-class-code">Classroom Code (Alphanumeric)</label>
+                            <div class="code-generator-wrapper">
+                                <input type="text" id="create-class-code" placeholder="e.g., BIO6" maxlength="10" required>
+                                <button type="button" class="btn btn-outline" id="generate-code-btn" title="Generate Random Code">
+                                    <i data-lucide="refresh-cw"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block btn-icon">
+                            <i data-lucide="plus-circle"></i>
+                            <span>Create Classroom</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Active Classrooms List -->
+                <div class="card active-classrooms-card animate-fade-in delay-100">
+                    <div class="card-header">
+                        <h3><i data-lucide="layers"></i> Active Classrooms</h3>
+                    </div>
+                    <div class="classrooms-list-container">
+                        <div class="empty-state" id="teacher-classes-empty">
+                            <p>You haven't created any classrooms yet. Set one up on the left!</p>
+                        </div>
+                        <div class="classrooms-grid hidden" id="teacher-classes-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. TEACHER CLASSROOM DETAIL VIEW (LIVE DASHBOARD) -->
+        <section id="view-teacher-class" class="view-section hidden">
+            <!-- Classroom Header -->
+            <div class="classroom-header-card teacher">
+                <div class="left-actions">
+                    <button class="btn btn-outline btn-sm btn-icon" onclick="app.navigateHome()">
+                        <i data-lucide="arrow-left"></i>
+                        <span>All Classrooms</span>
+                    </button>
+                </div>
+                <div class="classroom-info">
+                    <h1 id="teacher-class-name-display">Class 6 - Biology</h1>
+                    <div class="code-share-badge">
+                        <span>CODE: <strong id="teacher-class-code-badge">BIO6</strong></span>
+                        <button class="icon-btn-inline" id="copy-code-btn" title="Copy Code">
+                            <i data-lucide="copy"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="right-actions">
+                    <button class="btn btn-danger btn-sm btn-icon" id="reset-class-btn" title="Reset all student responses in this classroom">
+                        <i data-lucide="trash-2"></i>
+                        <span>Reset Session</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="dashboard-analytics-grid">
+                <!-- Live Stats Card -->
+                <div class="card live-stats-card animate-fade-in">
+                    <div class="card-header">
+                        <div class="header-flex">
+                            <h3><i data-lucide="activity" class="pulse-icon"></i> Live Emoji Summary</h3>
+                            <span class="active-students-count"><strong id="total-response-counter">0</strong> Total Responses</span>
+                        </div>
+                    </div>
+
+                    <!-- Visual Custom Chart Area -->
+                    <div class="custom-analytics-chart">
+                        <!-- 😎 Got It -->
+                        <div class="chart-row" data-emoji="😎">
+                            <div class="row-info">
+                                <span class="row-emoji">😎</span>
+                                <div class="row-labels">
+                                    <span class="label-title">Got It!</span>
+                                    <span class="label-desc">Understood everything</span>
+                                </div>
+                                <span class="row-count" id="count-😎">0</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar progress-😎" style="width: 0%"></div>
+                            </div>
+                            <span class="row-percent" id="percent-😎">0%</span>
+                        </div>
+
+                        <!-- 🤔 Bit Confused -->
+                        <div class="chart-row" data-emoji="🤔">
+                            <div class="row-info">
+                                <span class="row-emoji">🤔</span>
+                                <div class="row-labels">
+                                    <span class="label-title">Bit Confused</span>
+                                    <span class="label-desc">Needs clarification</span>
+                                </div>
+                                <span class="row-count" id="count-🤔">0</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar progress-🤔" style="style: width: 0%"></div>
+                            </div>
+                            <span class="row-percent" id="percent-🤔">0%</span>
+                        </div>
+
+                        <!-- 🤯 Too Hard -->
+                        <div class="chart-row" data-emoji="🤯">
+                            <div class="row-info">
+                                <span class="row-emoji">🤯</span>
+                                <div class="row-labels">
+                                    <span class="label-title">Too Hard</span>
+                                    <span class="label-desc">Feeling overwhelmed</span>
+                                </div>
+                                <span class="row-count" id="count-🤯">0</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar progress-🤯" style="width: 0%"></div>
+                            </div>
+                            <span class="row-percent" id="percent-🤯">0%</span>
+                        </div>
+
+                        <!-- 😴 Bored -->
+                        <div class="chart-row" data-emoji="😴">
+                            <div class="row-info">
+                                <span class="row-emoji">😴</span>
+                                <div class="row-labels">
+                                    <span class="label-title">Bored</span>
+                                    <span class="label-desc">Needs a change of pace</span>
+                                </div>
+                                <span class="row-count" id="count-😴">0</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar progress-😴" style="width: 0%"></div>
+                            </div>
+                            <span class="row-percent" id="percent-😴">0%</span>
+                        </div>
+
+                        <!-- 🙋‍♂️ Question -->
+                        <div class="chart-row" data-emoji="🙋‍♂️">
+                            <div class="row-info">
+                                <span class="row-emoji">🙋‍♂️</span>
+                                <div class="row-labels">
+                                    <span class="label-title">Question</span>
+                                    <span class="label-desc">Has a question</span>
+                                </div>
+                                <span class="row-count" id="count-🙋‍♂️">0</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar progress-🙋‍♂️" style="width: 0%"></div>
+                            </div>
+                            <span class="row-percent" id="percent-🙋‍♂️">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Report Card -->
+                <div class="card ai-report-card animate-fade-in delay-100">
+                    <div class="card-header">
+                        <div class="header-flex">
+                            <h3><i data-lucide="sparkles"></i> AI Classroom Report</h3>
+                            <button class="btn btn-outline btn-sm btn-icon" id="ai-settings-btn" title="Open AI configuration">
+                                <i data-lucide="settings"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="ai-report-body" id="ai-report-container">
+                        <div class="empty-state" id="ai-report-empty">
+                            <div class="empty-icon">✨</div>
+                            <p>Generate an instant AI evaluation of your students' understanding based on their emoji check-ins.</p>
+                            <button class="btn btn-primary btn-sm btn-icon margin-auto mt-4" id="generate-ai-report-btn">
+                                <i data-lucide="sparkles"></i>
+                                <span>Generate AI Class Report</span>
+                            </button>
+                        </div>
+
+                        <div class="ai-loading hidden" id="ai-report-loading">
+                            <div class="brain-animation">🧠✨</div>
+                            <p>Analyzing class response signatures...</p>
+                            <small>Consulting educational heuristics...</small>
+                        </div>
+
+                        <div class="ai-report-content hidden" id="ai-report-content-view">
+                            <div class="markdown-body" id="ai-report-text">
+                                <!-- Populated dynamically -->
+                            </div>
+                            <button class="btn btn-outline btn-sm btn-icon mt-4" id="regenerate-ai-report-btn">
+                                <i data-lucide="refresh-cw"></i>
+                                <span>Refresh Analysis</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- SETTINGS / CONFIG MODAL -->
+    <div class="modal-backdrop hidden" id="config-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i data-lucide="database"></i> Supabase Setup & Config</h3>
+                <button class="icon-btn" id="close-config-modal-btn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="modal-config-form">
+                    <div class="form-group">
+                        <label for="modal-config-url">Supabase URL</label>
+                        <input type="url" id="modal-config-url" placeholder="https://your-project.supabase.co" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-config-anon-key">Supabase Anon Key</label>
+                        <input type="password" id="modal-config-anon-key" placeholder="Anon public API key" required>
+                    </div>
+                    <div class="info-box">
+                        <i data-lucide="info"></i>
+                        <p>To use Auth and Realtime, run the SQL script in your Supabase SQL editor (found in your repository at <code>supabase/schema.sql</code>).</p>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" id="disconnect-btn">Disconnect Database</button>
+                        <button type="submit" class="btn btn-primary">Save & Connect</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI SETTINGS MODAL -->
+    <div class="modal-backdrop hidden" id="ai-settings-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i data-lucide="settings"></i> AI Classroom Report Settings</h3>
+                <button class="icon-btn" id="close-ai-modal-btn"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="ai-settings-form">
+                    <div class="form-group">
+                        <label for="gemini-api-key">Gemini API Key (Optional)</label>
+                        <input type="password" id="gemini-api-key" placeholder="AIZAcy..." autocomplete="off">
+                        <small class="form-help">Enter a Gemini API Key to use real generative AI for report writing. If empty, the app will generate a highly detailed heuristic analysis locally.</small>
+                    </div>
+                    <div class="info-box">
+                        <i data-lucide="shield-check"></i>
+                        <p>Your API key is saved directly in your browser's local storage and is only sent directly to Google's API endpoint.</p>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" id="clear-ai-key-btn">Clear Key</button>
+                        <button type="submit" class="btn btn-primary">Save Key</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom App Script -->
+    <script src="app.js"></script>
+</body>
+</html>
