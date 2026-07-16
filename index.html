@@ -121,6 +121,21 @@
             </div>
         </section>
 
+        <!-- 3.5 EMAIL VERIFICATION VIEW -->
+        <section id="view-verify-email" class="view-section hidden">
+            <div class="card text-center animate-fade-in" style="max-width: 480px; margin: 40px auto;">
+                <div style="font-size: 64px; margin-bottom: 20px;">✉️</div>
+                <h2>Verify Your Email</h2>
+                <p class="subtitle" style="margin-top: 10px; margin-bottom: 24px; line-height: 1.5;">
+                    We sent a verification link to <strong id="verify-email-display">you@school.edu</strong>.<br>Please check your inbox and click the link to activate your account.
+                </p>
+                <div class="form-actions" style="display: flex; flex-direction: column; gap: 12px;">
+                    <button class="btn btn-primary" onclick="app.showView('view-auth')">Back to Login</button>
+                    <small class="form-help">Didn't get the email? Check your spam folder.</small>
+                </div>
+            </div>
+        </section>
+
         <!-- 4. UNIFIED DASHBOARD -->
         <section id="view-dashboard" class="view-section hidden">
             <!-- Mode Toggle Switcher -->

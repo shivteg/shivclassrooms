@@ -350,12 +350,18 @@ class ShivClassroomApp {
 
             if (error) throw error;
 
-            this.toast('success', 'Signup successful! Welcome to shivclassroom.');
-            
-            // Sign in directly
-            this.currentUser = data.user;
-            this.updateUserUI();
-            this.navigateHome();
+            if (data.session) {
+                // Email confirmation is disabled, logged in automatically
+                this.currentUser = data.user;
+                this.updateUserUI();
+                this.navigateHome();
+                this.toast('success', 'Signup successful! Welcome to shivclassroom.');
+            } else {
+                // Email confirmation is enabled, redirect to Verification screen
+                document.getElementById('verify-email-display').textContent = email;
+                this.showView('view-verify-email');
+                this.toast('success', 'Signup successful! Verification email sent.');
+            }
         } catch (e) {
             this.toast('error', e.message || 'Registration failed.');
         }
