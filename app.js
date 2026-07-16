@@ -8,6 +8,7 @@ class ShivClassroomApp {
     constructor() {
         this.supabase = null;
         this.currentUser = null;
+        this.isPlaceholderConfig = true;
         
         // Active states
         this.activeClassroom = null; // Currently viewed classroom
@@ -27,16 +28,10 @@ class ShivClassroomApp {
         this.setupEventListeners();
         this.setupDashboardToggle();
         
-        // Check if database is configured
-        const isConfigured = this.loadDatabaseConfig();
+        // Load database configuration
+        this.loadDatabaseConfig();
         
-        if (!isConfigured) {
-            this.showView('view-config');
-            this.toast('info', 'Please configure your Supabase database credentials to start.');
-            return;
-        }
-
-        // Test connection and auto-authenticate
+        // Auto-authenticate or direct to Auth Screen
         await this.checkSession();
         lucide.createIcons();
     }
@@ -64,16 +59,31 @@ class ShivClassroomApp {
     }
 
     loadDatabaseConfig() {
-        const url = localStorage.getItem('supabase_url');
-        const anonKey = localStorage.getItem('supabase_anon_key');
+        // Load from config.js
+        let url = window.SHIVCLASSROOM_CONFIG?.SUPABASE_URL;
+        let anonKey = window.SHIVCLASSROOM_CONFIG?.SUPABASE_ANON_KEY;
         
+        const isPlaceholder = (u, k) => {
+            return !u || !k || u.includes("your-project") || k === "your-anon-key";
+        };
+
+        // Fallback to localStorage if config.js is not configured
+        if (isPlaceholder(url, anonKey)) {
+            const localUrl = localStorage.getItem('supabase_url');
+            const localKey = localStorage.getItem('supabase_anon_key');
+            if (localUrl && localKey) {
+                url = localUrl;
+                anonKey = localKey;
+            }
+        }
+
         if (url && anonKey) {
             try {
-                // Initialize Supabase Client
                 this.supabase = window.supabase.createClient(url, anonKey);
+                this.isPlaceholderConfig = isPlaceholder(url, anonKey);
                 return true;
             } catch (e) {
-                console.error("Initialization error:", e);
+                console.error("Supabase initialization error:", e);
                 return false;
             }
         }
@@ -82,6 +92,16 @@ class ShivClassroomApp {
 
     async checkSession() {
         this.showView('view-loading');
+        
+        // If config is placeholder, redirect directly to Auth but show warning
+        if (this.isPlaceholderConfig) {
+            setTimeout(() => {
+                this.showView('view-auth');
+                this.toast('error', 'Database not connected. Please edit "config.js" in the project folder with your actual Supabase credentials.');
+            }, 800);
+            return;
+        }
+
         try {
             const { data: { session }, error } = await this.supabase.auth.getSession();
             
@@ -96,8 +116,7 @@ class ShivClassroomApp {
             }
         } catch (e) {
             console.error("Session check failed:", e);
-            this.toast('error', 'Connection failed. Please verify your database settings.');
-            this.showView('view-config');
+            this.showView('view-auth');
         }
     }
 
@@ -199,39 +218,11 @@ class ShivClassroomApp {
             toast.addEventListener('animationend', () => {
                 toast.remove();
             });
-        }, 4000);
+        }, 5000);
     }
 
     // 4. EVENT LISTENERS BINDING
     setupEventListeners() {
-        // DB Setup Submit
-        document.getElementById('config-form').addEventListener('submit', (e) => this.handleSaveConfig(e));
-        document.getElementById('modal-config-form').addEventListener('submit', (e) => this.handleSaveConfig(e, true));
-
-        // DB Header Toggle
-        document.getElementById('config-btn').addEventListener('click', () => {
-            const modal = document.getElementById('config-modal');
-            const urlInput = document.getElementById('modal-config-url');
-            const keyInput = document.getElementById('modal-config-anon-key');
-            
-            urlInput.value = localStorage.getItem('supabase_url') || '';
-            keyInput.value = localStorage.getItem('supabase_anon_key') || '';
-            
-            modal.classList.remove('hidden');
-            lucide.createIcons();
-        });
-
-        // Close Config Modal
-        document.getElementById('close-config-modal-btn').addEventListener('click', () => {
-            document.getElementById('config-modal').classList.add('hidden');
-        });
-
-        document.getElementById('disconnect-btn').addEventListener('click', () => {
-            localStorage.removeItem('supabase_url');
-            localStorage.removeItem('supabase_anon_key');
-            location.reload();
-        });
-
         // Auth Tabs
         document.querySelectorAll('.auth-tab').forEach(tab => {
             tab.addEventListener('click', (e) => {
@@ -311,38 +302,15 @@ class ShivClassroomApp {
         });
     }
 
-    // 5. DATABASE CONFIG ACTIONS
-    async handleSaveConfig(e, isModal = false) {
-        e.preventDefault();
-        const prefix = isModal ? 'modal-' : '';
-        const url = document.getElementById(`${prefix}config-url`).value.trim();
-        const anonKey = document.getElementById(`${prefix}config-anon-key`).value.trim();
-
-        try {
-            // Test connection with keys
-            const tempClient = window.supabase.createClient(url, anonKey);
-            const { error } = await tempClient.auth.getSession();
-            
-            if (error) throw error;
-
-            localStorage.setItem('supabase_url', url);
-            localStorage.setItem('supabase_anon_key', anonKey);
-            
-            if (isModal) {
-                document.getElementById('config-modal').classList.add('hidden');
-            }
-
-            this.toast('success', 'Database connected successfully!');
-            setTimeout(() => location.reload(), 1000);
-        } catch (e) {
-            console.error("Config save failed:", e);
-            this.toast('error', 'Failed to connect. Check URL and Anon Key credentials.');
-        }
-    }
-
-    // 6. AUTHENTICATION LOGIC
+    // 5. AUTHENTICATION LOGIC
     async handleLogin(e) {
         e.preventDefault();
+        
+        if (this.isPlaceholderConfig) {
+            this.toast('error', 'Cannot connect to database. Please fill in your actual credentials in "config.js" in the root directory.');
+            return;
+        }
+
         const email = document.getElementById('login-email').value.trim();
         const password = document.getElementById('login-password').value;
 
@@ -363,6 +331,12 @@ class ShivClassroomApp {
 
     async handleSignup(e) {
         e.preventDefault();
+        
+        if (this.isPlaceholderConfig) {
+            this.toast('error', 'Cannot connect to database. Please fill in your actual credentials in "config.js" in the root directory.');
+            return;
+        }
+
         const email = document.getElementById('signup-email').value.trim();
         const password = document.getElementById('signup-password').value;
 
@@ -400,7 +374,7 @@ class ShivClassroomApp {
         }
     }
 
-    // 7. TEACHER ACTIONS & CLASSROOM CREATION
+    // 6. TEACHER ACTIONS & CLASSROOM CREATION
     async handleCreateClass(e) {
         e.preventDefault();
         const name = document.getElementById('create-class-name').value.trim();
@@ -573,7 +547,7 @@ class ShivClassroomApp {
         }
     }
 
-    // 8. STUDENT ACTIONS
+    // 7. STUDENT ACTIONS
     async handleJoinClass(e) {
         e.preventDefault();
         const code = document.getElementById('class-code-input').value.trim().toUpperCase();
@@ -735,7 +709,7 @@ class ShivClassroomApp {
         }
     }
 
-    // 9. REALTIME LISTENERS
+    // 8. REALTIME LISTENERS
     subscribeRealtime() {
         if (!this.activeClassroom) return;
         
@@ -787,7 +761,7 @@ class ShivClassroomApp {
         }
     }
 
-    // 10. AI GENERATION (Gemini API Integration vs Local Heuristic engine)
+    // 9. AI GENERATION (Gemini API Integration vs Local Heuristic engine)
     async generateAIReport() {
         const total = Object.values(this.emojiCounts).reduce((a, b) => a + b, 0);
         if (total === 0) {

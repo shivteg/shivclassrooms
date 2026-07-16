@@ -36,11 +36,6 @@
                 <button class="icon-btn" id="theme-toggle" title="Toggle Theme">
                     <i data-lucide="moon"></i>
                 </button>
-                <!-- Supabase Config Status/Button -->
-                <button class="btn btn-outline btn-sm btn-icon" id="config-btn" title="Supabase Database Configuration">
-                    <i data-lucide="database"></i>
-                    <span class="btn-text">DB Config</span>
-                </button>
                 <!-- User Profile & Log Out -->
                 <div class="user-profile-menu hidden" id="user-menu">
                     <div class="user-badge">
@@ -69,35 +64,6 @@
             </div>
         </section>
 
-        <!-- 2. SUPABASE CONFIGURATION VIEW -->
-        <section id="view-config" class="view-section hidden">
-            <div class="card config-card">
-                <div class="card-header text-center">
-                    <div class="card-icon">⚡</div>
-                    <h1>Supabase Setup</h1>
-                    <p class="subtitle">Connect to your Supabase instance to enable Auth, Database, and Realtime features.</p>
-                </div>
-                <form id="config-form" class="config-form">
-                    <div class="form-group">
-                        <label for="config-url">Supabase Project URL</label>
-                        <input type="url" id="config-url" placeholder="https://your-project.supabase.co" required>
-                        <small class="form-help">Found in Project Settings > API > Project URL</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="config-anon-key">Supabase Anon Public Key</label>
-                        <input type="password" id="config-anon-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
-                        <small class="form-help">Found in Project Settings > API > anon public key</small>
-                    </div>
-                    <div class="info-box">
-                        <i data-lucide="info"></i>
-                        <p>Credentials are securely stored locally in your browser's local storage and never sent to any third party.</p>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary btn-block">Save & Connect</button>
-                    </div>
-                </form>
-            </div>
-        </section>
 
         <!-- 3. AUTHENTICATION VIEW -->
         <section id="view-auth" class="view-section hidden">
@@ -475,35 +441,6 @@
         </section>
     </main>
 
-    <!-- SETTINGS / CONFIG MODAL -->
-    <div class="modal-backdrop hidden" id="config-modal">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3><i data-lucide="database"></i> Supabase Setup & Config</h3>
-                <button class="icon-btn" id="close-config-modal-btn"><i data-lucide="x"></i></button>
-            </div>
-            <div class="modal-body">
-                <form id="modal-config-form">
-                    <div class="form-group">
-                        <label for="modal-config-url">Supabase URL</label>
-                        <input type="url" id="modal-config-url" placeholder="https://your-project.supabase.co" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="modal-config-anon-key">Supabase Anon Key</label>
-                        <input type="password" id="modal-config-anon-key" placeholder="Anon public API key" required>
-                    </div>
-                    <div class="info-box">
-                        <i data-lucide="info"></i>
-                        <p>To use Auth and Realtime, run the SQL script in your Supabase SQL editor (found in your repository at <code>supabase/schema.sql</code>).</p>
-                    </div>
-                    <div class="modal-actions">
-                        <button type="button" class="btn btn-outline" id="disconnect-btn">Disconnect Database</button>
-                        <button type="submit" class="btn btn-primary">Save & Connect</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
 
     <!-- AI SETTINGS MODAL -->
     <div class="modal-backdrop hidden" id="ai-settings-modal">
@@ -532,6 +469,8 @@
         </div>
     </div>
 
+    <!-- Configuration Script -->
+    <script src="config.js"></script>
     <!-- Custom App Script -->
     <script src="app.js"></script>
 </body>
