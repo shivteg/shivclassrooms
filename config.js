@@ -3,8 +3,8 @@
 
 window.SHIVCLASSROOM_CONFIG = {
     // Replace with your actual Supabase Project URL (e.g., https://abc123xyz.supabase.co)
-    SUPABASE_URL: "https://your-project.supabase.co",
+    SUPABASE_URL: "https://ymiorqfcrzcfftvtcgvv.supabase.co",
     
     // Replace with your actual Supabase Anon Public Key
-    SUPABASE_ANON_KEY: "your-anon-key"
+    SUPABASE_ANON_KEY: "sb_publishable_ygxPHJK5AyVmoZlKAqEI9Q_V8IVOUiy"
 };
