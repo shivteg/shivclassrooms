@@ -1,6 +1,6 @@
 /**
  * shivclassroom - Main Application Controller
- * Handles Supabase database connections, user sessions, UI screens routing,
+ * Handles Supabase database connections, user sessions, unified dashboard mode toggles,
  * real-time feedback listeners, and AI Report generation.
  */
 
@@ -8,7 +8,6 @@ class ShivClassroomApp {
     constructor() {
         this.supabase = null;
         this.currentUser = null;
-        this.userRole = null; // 'teacher' or 'student'
         
         // Active states
         this.activeClassroom = null; // Currently viewed classroom
@@ -26,6 +25,7 @@ class ShivClassroomApp {
     async init() {
         this.setupTheme();
         this.setupEventListeners();
+        this.setupDashboardToggle();
         
         // Check if database is configured
         const isConfigured = this.loadDatabaseConfig();
@@ -89,8 +89,8 @@ class ShivClassroomApp {
 
             if (session) {
                 this.currentUser = session.user;
-                // Fetch user role
-                await this.fetchUserRole(session.user.id);
+                this.updateUserUI();
+                this.navigateHome();
             } else {
                 this.showView('view-auth');
             }
@@ -101,44 +101,12 @@ class ShivClassroomApp {
         }
     }
 
-    async fetchUserRole(userId) {
-        try {
-            // First look in raw user meta data
-            let role = this.currentUser.user_metadata?.role;
-            
-            // Fallback: Query profiles table
-            if (!role) {
-                const { data, error } = await this.supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', userId)
-                    .single();
-                
-                if (!error && data) {
-                    role = data.role;
-                }
-            }
-
-            this.userRole = role || 'student'; // default fallback
-            this.updateUserUI();
-            this.navigateHome();
-        } catch (e) {
-            console.error("Role fetching failed:", e);
-            this.userRole = 'student';
-            this.updateUserUI();
-            this.navigateHome();
-        }
-    }
-
     updateUserUI() {
         const userMenu = document.getElementById('user-menu');
-        const roleBadge = document.getElementById('user-role-badge');
         const emailDisplay = document.getElementById('user-email-display');
 
         if (this.currentUser) {
             userMenu.classList.remove('hidden');
-            roleBadge.textContent = this.userRole;
-            roleBadge.className = `role-tag role-${this.userRole}`;
             emailDisplay.textContent = this.currentUser.email;
         } else {
             userMenu.classList.add('hidden');
@@ -161,6 +129,31 @@ class ShivClassroomApp {
         lucide.createIcons();
     }
 
+    setupDashboardToggle() {
+        const btnStudent = document.getElementById('btn-mode-student');
+        const btnTeacher = document.getElementById('btn-mode-teacher');
+        const panelStudent = document.getElementById('panel-student');
+        const panelTeacher = document.getElementById('panel-teacher');
+
+        if (btnStudent && btnTeacher) {
+            btnStudent.addEventListener('click', () => {
+                btnStudent.classList.add('active');
+                btnTeacher.classList.remove('active');
+                panelStudent.classList.remove('hidden');
+                panelTeacher.classList.add('hidden');
+                this.loadStudentRecentClasses();
+            });
+
+            btnTeacher.addEventListener('click', () => {
+                btnTeacher.classList.add('active');
+                btnStudent.classList.remove('active');
+                panelTeacher.classList.remove('hidden');
+                panelStudent.classList.add('hidden');
+                this.loadTeacherClassrooms();
+            });
+        }
+    }
+
     navigateHome() {
         if (!this.currentUser) {
             this.showView('view-auth');
@@ -170,11 +163,14 @@ class ShivClassroomApp {
         // Clean up real-time listener if leaving active classroom dashboard
         this.unsubscribeRealtime();
 
-        if (this.userRole === 'teacher') {
-            this.showView('view-teacher-home');
+        // Show unified dashboard
+        this.showView('view-dashboard');
+        
+        // Refresh whichever tab is active
+        const btnTeacher = document.getElementById('btn-mode-teacher');
+        if (btnTeacher && btnTeacher.classList.contains('active')) {
             this.loadTeacherClassrooms();
         } else {
-            this.showView('view-student-home');
             this.loadStudentRecentClasses();
         }
     }
@@ -358,7 +354,8 @@ class ShivClassroomApp {
 
             this.currentUser = data.user;
             this.toast('success', 'Welcome back!');
-            await this.fetchUserRole(data.user.id);
+            this.updateUserUI();
+            this.navigateHome();
         } catch (e) {
             this.toast('error', e.message || 'Log in failed.');
         }
@@ -368,17 +365,13 @@ class ShivClassroomApp {
         e.preventDefault();
         const email = document.getElementById('signup-email').value.trim();
         const password = document.getElementById('signup-password').value;
-        const role = document.querySelector('input[name="signup-role"]:checked').value;
 
         this.toast('info', 'Creating secure account...');
 
         try {
             const { data, error } = await this.supabase.auth.signUp({
                 email,
-                password,
-                options: {
-                    data: { role }
-                }
+                password
             });
 
             if (error) throw error;
@@ -387,7 +380,6 @@ class ShivClassroomApp {
             
             // Sign in directly
             this.currentUser = data.user;
-            this.userRole = role;
             this.updateUserUI();
             this.navigateHome();
         } catch (e) {
@@ -399,7 +391,6 @@ class ShivClassroomApp {
         try {
             await this.supabase.auth.signOut();
             this.currentUser = null;
-            this.userRole = null;
             this.activeClassroom = null;
             this.updateUserUI();
             this.showView('view-auth');

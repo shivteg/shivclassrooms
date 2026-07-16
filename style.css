@@ -1329,3 +1329,55 @@ input:focus {
     font-size: 13.5px;
     font-weight: 500;
 }
+
+/* Dashboard Mode Toggle */
+.dashboard-toggle-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 32px;
+}
+
+.dashboard-toggle-container {
+    background-color: var(--bg-secondary);
+    padding: 6px;
+    border-radius: 100px;
+    display: flex;
+    gap: 4px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.toggle-mode-btn {
+    font-family: var(--font-family);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 100px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all var(--transition-fast);
+}
+
+.toggle-mode-btn i {
+    width: 18px;
+    height: 18px;
+}
+
+.toggle-mode-btn:hover {
+    color: var(--text-primary);
+}
+
+.toggle-mode-btn.active {
+    background-color: var(--color-primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.dashboard-panel-content {
+    animation: fade-in 0.4s ease-out;
+}
