@@ -343,11 +343,15 @@ class ShivClassroomApp {
         this.toast('info', 'Creating secure account...');
 
         try {
+            const redirectUrl = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
+                ? window.location.origin
+                : 'https://shivclassrooms.vercel.app/';
+
             const { data, error } = await this.supabase.auth.signUp({
                 email,
                 password,
                 options: {
-                    emailRedirectTo: window.location.origin
+                    emailRedirectTo: redirectUrl
                 }
             });
 
