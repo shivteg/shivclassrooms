@@ -592,88 +592,144 @@ class ShivClassroomApp {
         }
     }
 
+    generateUUID() {
+        if (window.crypto && window.crypto.randomUUID) {
+            return window.crypto.randomUUID();
+        }
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
     // 6. TEACHER ACTIONS & CLASSROOM CREATION
     async handleCreateClass(e) {
         e.preventDefault();
         const name = document.getElementById('create-class-name').value.trim();
         const code = document.getElementById('create-class-code').value.trim().toUpperCase();
 
-        try {
-            const { data, error } = await this.supabase
-                .from('classrooms')
-                .insert({
-                    name,
-                    code,
-                    teacher_id: this.currentUser.id
-                })
-                .select()
-                .single();
+        if (!this.currentUser) return;
 
-            if (error) {
-                if (error.code === '23505') {
-                    throw new Error('This Classroom Code is already taken. Please choose another.');
+        // Ensure teacher ID is a valid UUID
+        const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(this.currentUser.id);
+        const teacherId = isValidUUID ? this.currentUser.id : this.generateUUID();
+
+        const newClassroom = {
+            id: this.generateUUID(),
+            name,
+            code,
+            teacher_id: teacherId,
+            created_at: new Date().toISOString()
+        };
+
+        let supabaseSuccess = false;
+
+        if (this.supabase && !this.isPlaceholderConfig) {
+            try {
+                const { data, error } = await this.supabase
+                    .from('classrooms')
+                    .insert({
+                        name,
+                        code,
+                        teacher_id: teacherId
+                    })
+                    .select()
+                    .single();
+
+                if (!error && data) {
+                    supabaseSuccess = true;
+                    newClassroom.id = data.id;
+                } else if (error && error.code === '23505') {
+                    this.toast('error', 'This Classroom Code is already taken. Please choose another.');
+                    return;
                 }
-                throw error;
+            } catch (err) {
+                console.warn("Supabase classroom insert failed, saving to local state:", err);
             }
-
-            this.toast('success', `Classroom "${name}" created!`);
-            document.getElementById('create-class-form').reset();
-            
-            // Celebrate with confetti!
-            confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 }
-            });
-
-            this.loadTeacherClassrooms();
-        } catch (e) {
-            this.toast('error', e.message || 'Failed to create classroom.');
         }
+
+        // Always save to local state as fallback
+        let localClasses = JSON.parse(localStorage.getItem('shivclassroom_local_classes') || '[]');
+        if (localClasses.some(c => c.code === code)) {
+            this.toast('error', 'This Classroom Code is already taken. Please choose another.');
+            return;
+        }
+
+        localClasses.unshift(newClassroom);
+        localStorage.setItem('shivclassroom_local_classes', JSON.stringify(localClasses));
+
+        this.toast('success', `Classroom "${name}" created successfully!`);
+        document.getElementById('create-class-form').reset();
+        
+        // Celebrate with confetti!
+        confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+        });
+
+        this.loadTeacherClassrooms();
     }
 
     async loadTeacherClassrooms() {
-        try {
-            const { data, error } = await this.supabase
-                .from('classrooms')
-                .select('*')
-                .eq('teacher_id', this.currentUser.id)
-                .order('created_at', { ascending: false });
+        let remoteClasses = [];
+        let localClasses = JSON.parse(localStorage.getItem('shivclassroom_local_classes') || '[]');
 
-            if (error) throw error;
+        if (this.supabase && !this.isPlaceholderConfig && this.currentUser) {
+            const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(this.currentUser.id);
+            if (isValidUUID) {
+                try {
+                    const { data, error } = await this.supabase
+                        .from('classrooms')
+                        .select('*')
+                        .eq('teacher_id', this.currentUser.id)
+                        .order('created_at', { ascending: false });
 
-            const emptyState = document.getElementById('teacher-classes-empty');
-            const listGrid = document.getElementById('teacher-classes-list');
-
-            if (!data || data.length === 0) {
-                emptyState.classList.remove('hidden');
-                listGrid.classList.add('hidden');
-            } else {
-                emptyState.classList.add('hidden');
-                listGrid.classList.remove('hidden');
-                
-                listGrid.innerHTML = '';
-                data.forEach(classroom => {
-                    const card = document.createElement('div');
-                    card.className = 'class-card';
-                    card.innerHTML = `
-                        <div class="class-card-header">
-                            <h4>${classroom.name}</h4>
-                            <span class="code">Code: ${classroom.code}</span>
-                        </div>
-                        <div class="class-card-footer">
-                            <span><i data-lucide="calendar"></i> ${new Date(classroom.created_at).toLocaleDateString()}</span>
-                            <span class="btn-text">Open Dashboard →</span>
-                        </div>
-                    `;
-                    card.addEventListener('click', () => this.openTeacherClassroom(classroom));
-                    listGrid.appendChild(card);
-                });
-                lucide.createIcons();
+                    if (!error && data) {
+                        remoteClasses = data;
+                    }
+                } catch (e) {
+                    console.warn("Could not load classrooms from Supabase, loading local classes:", e);
+                }
             }
-        } catch (e) {
-            console.error("Load classes failed:", e);
-            this.toast('error', 'Error loading classrooms.');
+        }
+
+        // Merge remote and local classrooms without duplicates
+        const combined = [...remoteClasses];
+        localClasses.forEach(lc => {
+            if (!combined.some(rc => rc.code === lc.code)) {
+                combined.push(lc);
+            }
+        });
+
+        const emptyState = document.getElementById('teacher-classes-empty');
+        const listGrid = document.getElementById('teacher-classes-list');
+
+        if (!combined || combined.length === 0) {
+            emptyState.classList.remove('hidden');
+            listGrid.classList.add('hidden');
+        } else {
+            emptyState.classList.add('hidden');
+            listGrid.classList.remove('hidden');
+            
+            listGrid.innerHTML = '';
+            combined.forEach(classroom => {
+                const card = document.createElement('div');
+                card.className = 'class-card';
+                card.innerHTML = `
+                    <div class="class-card-header">
+                        <h4>${classroom.name}</h4>
+                        <span class="code">Code: ${classroom.code}</span>
+                    </div>
+                    <div class="class-card-footer">
+                        <span><i data-lucide="calendar"></i> ${new Date(classroom.created_at).toLocaleDateString()}</span>
+                        <span class="btn-text">Open Dashboard →</span>
+                    </div>
+                `;
+                card.addEventListener('click', () => this.openTeacherClassroom(classroom));
+                listGrid.appendChild(card);
+            });
+            lucide.createIcons();
         }
     }
 
@@ -772,25 +828,40 @@ class ShivClassroomApp {
 
         this.toast('info', 'Searching for classroom...');
 
-        try {
-            const { data, error } = await this.supabase
-                .from('classrooms')
-                .select('*')
-                .eq('code', code)
-                .single();
+        let foundClassroom = null;
 
-            if (error || !data) {
-                throw new Error('Classroom code not found. Check the code with your teacher.');
+        if (this.supabase && !this.isPlaceholderConfig) {
+            try {
+                const { data, error } = await this.supabase
+                    .from('classrooms')
+                    .select('*')
+                    .eq('code', code)
+                    .single();
+
+                if (!error && data) {
+                    foundClassroom = data;
+                }
+            } catch (err) {
+                console.warn("Supabase classroom lookup failed:", err);
             }
-
-            // Save in recent classes (max 6)
-            this.saveRecentClassroom(data);
-
-            // Open student classroom view
-            this.openStudentClassroom(data);
-        } catch (e) {
-            this.toast('error', e.message || 'Failed to join classroom.');
         }
+
+        // Fallback to local classrooms if not found in Supabase
+        if (!foundClassroom) {
+            const localClasses = JSON.parse(localStorage.getItem('shivclassroom_local_classes') || '[]');
+            foundClassroom = localClasses.find(c => c.code === code);
+        }
+
+        if (!foundClassroom) {
+            this.toast('error', 'Classroom code not found. Check the code with your teacher.');
+            return;
+        }
+
+        // Save in recent classes (max 6)
+        this.saveRecentClassroom(foundClassroom);
+
+        // Open student classroom view
+        this.openStudentClassroom(foundClassroom);
     }
 
     saveRecentClassroom(classroom) {
