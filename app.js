@@ -461,17 +461,33 @@ class ShivClassroomApp {
         this.toast('info', 'Logging you in...');
 
         const roleFallbacks = {
-            'shivteg@admin.com': { id: 'sa-shivteg', email: 'shivteg@admin.com', name: 'Shivteg (Super Admin)', role: 'super_admin' },
-            'admin@school.edu': { id: 'sa-school', email: 'admin@school.edu', name: 'Dr. Sarah (School Admin)', role: 'school_admin' },
-            'teacher@school.edu': { id: 'teacher-1', email: 'teacher@school.edu', name: 'Prof. Oak (Teacher)', role: 'teacher' },
-            'student@school.edu': { id: 'student-1', email: 'student@school.edu', name: 'Alex Johnson (Student)', role: 'student' }
+            'shivteg@admin.com': { id: 'sa-shivteg', email: 'shivteg@admin.com', password: 'teg2172014', name: 'Shivteg (Super Admin)', role: 'super_admin' },
+            'admin@school.edu': { id: 'sa-school', email: 'admin@school.edu', password: 'SchoolAdmin123!', name: 'Dr. Sarah (School Admin)', role: 'school_admin' },
+            'teacher@school.edu': { id: 'teacher-1', email: 'teacher@school.edu', password: 'Teacher123!', name: 'Prof. Oak (Teacher)', role: 'teacher' },
+            'student@school.edu': { id: 'student-1', email: 'student@school.edu', password: 'Student123!', name: 'Alex Johnson (Student)', role: 'student' }
         };
 
+        // Check if user exists in Super Admin created local roster
+        const roster = JSON.parse(localStorage.getItem('shivclassroom_school_roster') || '[]');
+        const rosterMatch = roster.find(u => u.email.toLowerCase() === email);
+
         if (this.isPlaceholderConfig || !this.supabase) {
-            if (roleFallbacks[email]) {
+            if (email === 'shivteg@admin.com') {
+                if (password !== 'teg2172014') {
+                    this.toast('error', 'Invalid password for Super Admin shivteg@admin.com.');
+                    return;
+                }
+                this.currentUser = roleFallbacks[email];
+            } else if (rosterMatch) {
+                if (rosterMatch.password && rosterMatch.password !== password) {
+                    this.toast('error', 'Invalid password for this account.');
+                    return;
+                }
+                this.currentUser = { id: 'user-' + Date.now(), email: rosterMatch.email, name: rosterMatch.name, role: rosterMatch.role };
+            } else if (roleFallbacks[email]) {
                 this.currentUser = roleFallbacks[email];
             } else {
-                // Fixed default student profile for unrecognized emails
+                // Public unregistered emails default to student role
                 this.currentUser = { id: 'user-' + Date.now(), email, name: email.split('@')[0], role: 'student' };
             }
             localStorage.setItem('shivclassroom_user', JSON.stringify(this.currentUser));
@@ -490,14 +506,20 @@ class ShivClassroomApp {
             this.updateUserUI();
             this.navigateHome();
         } catch (err) {
-            if (roleFallbacks[email]) {
+            if (email === 'shivteg@admin.com' && password === 'teg2172014') {
                 this.currentUser = roleFallbacks[email];
                 localStorage.setItem('shivclassroom_user', JSON.stringify(this.currentUser));
                 this.toast('success', `Signed in as ${this.currentUser.name}`);
                 this.updateUserUI();
                 this.navigateHome();
+            } else if (rosterMatch && (!rosterMatch.password || rosterMatch.password === password)) {
+                this.currentUser = { id: 'user-' + Date.now(), email: rosterMatch.email, name: rosterMatch.name, role: rosterMatch.role };
+                localStorage.setItem('shivclassroom_user', JSON.stringify(this.currentUser));
+                this.toast('success', `Signed in as ${this.currentUser.name}`);
+                this.updateUserUI();
+                this.navigateHome();
             } else {
-                this.toast('error', err.message || 'Log in failed.');
+                this.toast('error', err.message || 'Log in failed. Invalid credentials.');
             }
         }
     }
@@ -1162,16 +1184,18 @@ ${recommendation}
     handleSuperAdminAddUser(e) {
         e.preventDefault();
         const name = document.getElementById('sa-user-name').value.trim();
-        const email = document.getElementById('sa-user-email').value.trim();
+        const email = document.getElementById('sa-user-email').value.trim().toLowerCase();
+        const passwordInput = document.getElementById('sa-user-password');
+        const password = passwordInput ? passwordInput.value : '';
         const role = document.getElementById('sa-user-role').value;
 
         let roster = JSON.parse(localStorage.getItem('shivclassroom_school_roster') || '[]');
-        if (roster.some(u => u.email === email)) {
+        if (roster.some(u => u.email.toLowerCase() === email)) {
             this.toast('error', 'User with this email already exists in system.');
             return;
         }
 
-        roster.push({ name, email, role, dept: 'Assigned User' });
+        roster.push({ name, email, password, role, dept: 'Managed Account' });
         localStorage.setItem('shivclassroom_school_roster', JSON.stringify(roster));
         this.toast('success', `User ${name} created with role "${role}"`);
         document.getElementById('superadmin-add-user-form').reset();

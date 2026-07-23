@@ -72,45 +72,8 @@
                 <div class="auth-card">
                     <div class="auth-header">
                         <h2>Welcome to shivclassroom</h2>
-                        <p>Select your role or sign in with your email account.</p>
+                        <p>Sign in with your registered account credentials.</p>
                     </div>
-
-                    <!-- Role Quick Switcher -->
-                    <div class="role-selector-box">
-                        <span class="role-box-label">⚡ Direct Role Access:</span>
-                        <div class="role-buttons-grid">
-                            <button type="button" class="role-select-btn role-superadmin" onclick="app.quickLogin('super_admin')">
-                                <span class="role-icon">👑</span>
-                                <div class="role-details">
-                                    <strong>Super Admin (Shivteg)</strong>
-                                    <small>Full control over everything</small>
-                                </div>
-                            </button>
-                            <button type="button" class="role-select-btn role-schooladmin" onclick="app.quickLogin('school_admin')">
-                                <span class="role-icon">🏛️</span>
-                                <div class="role-details">
-                                    <strong>School Admin</strong>
-                                    <small>Manage Teachers & Students</small>
-                                </div>
-                            </button>
-                            <button type="button" class="role-select-btn role-teacher" onclick="app.quickLogin('teacher')">
-                                <span class="role-icon">🎓</span>
-                                <div class="role-details">
-                                    <strong>Teacher</strong>
-                                    <small>Add Students & Classrooms</small>
-                                </div>
-                            </button>
-                            <button type="button" class="role-select-btn role-student" onclick="app.quickLogin('student')">
-                                <span class="role-icon">🎒</span>
-                                <div class="role-details">
-                                    <strong>Student</strong>
-                                    <small>Visit Site (No Dashboard)</small>
-                                </div>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="auth-divider"><span>OR SIGN IN WITH EMAIL</span></div>
 
                     <!-- Auth Tabs -->
                     <div class="auth-tabs">
@@ -121,7 +84,7 @@
                     <!-- Login Form -->
                     <form id="login-form" class="auth-form active">
                         <div class="form-group">
-                            <label for="login-email">School Email</label>
+                            <label for="login-email">Email Address</label>
                             <div class="input-icon-wrapper">
                                 <i data-lucide="mail"></i>
                                 <input type="email" id="login-email" placeholder="you@school.edu" required>
@@ -137,24 +100,13 @@
                         <button type="submit" class="btn btn-primary btn-block">Log In</button>
                     </form>
 
-                    <!-- Signup Form -->
+                    <!-- Signup Form (Public signups automatically register as Student) -->
                     <form id="signup-form" class="auth-form">
                         <div class="form-group">
-                            <label for="signup-email">School Email</label>
+                            <label for="signup-email">Email Address</label>
                             <div class="input-icon-wrapper">
                                 <i data-lucide="mail"></i>
                                 <input type="email" id="signup-email" placeholder="you@school.edu" required>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="signup-role">Select Role</label>
-                            <div class="input-icon-wrapper">
-                                <i data-lucide="user-check"></i>
-                                <select id="signup-role" class="custom-select" required>
-                                    <option value="student">Student (Visit & Join)</option>
-                                    <option value="teacher">Teacher (Add Students & Classrooms)</option>
-                                    <option value="school_admin">School Admin (Manage Teachers & Students)</option>
-                                </select>
                             </div>
                         </div>
                         <div class="form-group">
@@ -272,6 +224,10 @@
                             <div class="form-group">
                                 <label for="sa-user-email">Email Address</label>
                                 <input type="email" id="sa-user-email" placeholder="user@school.edu" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="sa-user-password">Password</label>
+                                <input type="password" id="sa-user-password" placeholder="••••••••" minlength="6" required>
                             </div>
                             <div class="form-group">
                                 <label for="sa-user-role">Role Assignment</label>
