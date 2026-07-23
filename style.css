@@ -1381,3 +1381,221 @@ input:focus {
 .dashboard-panel-content {
     animation: fade-in 0.4s ease-out;
 }
+
+/* ROLE SYSTEM STYLES */
+.role-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(236, 72, 153, 0.15));
+    color: var(--color-primary);
+    border: 1px solid var(--card-border);
+}
+
+.role-selector-box {
+    margin-bottom: 20px;
+    padding: 16px;
+    background: rgba(99, 102, 241, 0.04);
+    border-radius: var(--radius-md);
+    border: 1px dashed rgba(99, 102, 241, 0.2);
+}
+
+.role-box-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: var(--color-primary);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+}
+
+.role-buttons-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.role-select-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.role-select-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-primary);
+}
+
+.role-icon {
+    font-size: 20px;
+}
+
+.role-details strong {
+    display: block;
+    font-size: 12px;
+    color: var(--text-primary);
+}
+
+.role-details small {
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 16px 0;
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.auth-divider::before, .auth-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.auth-divider span {
+    padding: 0 10px;
+}
+
+.student-notice-banner {
+    padding: 14px 20px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: var(--radius-md);
+    color: #10b981;
+    font-size: 13px;
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.superadmin-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(236, 72, 153, 0.1));
+    border-radius: var(--radius-lg);
+    margin-bottom: 24px;
+    border: 1px solid var(--card-border);
+}
+
+.superadmin-hero h2 {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.superadmin-hero p {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.stats-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px;
+    background: var(--card-bg);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--shadow-sm);
+}
+
+.stat-icon {
+    font-size: 28px;
+}
+
+.stat-label {
+    display: block;
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.stat-count {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--color-primary);
+}
+
+.roster-table-wrapper {
+    overflow-x: auto;
+}
+
+.roster-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.roster-table th, .roster-table td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.roster-table th {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    font-weight: 700;
+}
+
+.role-pill-sm {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.role-pill-sm.role-super_admin { background: #fee2e2; color: #ef4444; }
+.role-pill-sm.role-school_admin { background: #e0e7ff; color: #4338ca; }
+.role-pill-sm.role-teacher { background: #fef3c7; color: #d97706; }
+.role-pill-sm.role-student { background: #d1fae5; color: #059669; }
+
+.student-roster-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.student-roster-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+}
+
+.btn-xs {
+    padding: 4px 8px;
+    font-size: 11px;
+    border-radius: 6px;
+}
+

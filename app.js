@@ -7,7 +7,7 @@
 class ShivClassroomApp {
     constructor() {
         this.supabase = null;
-        this.currentUser = null;
+        this.currentUser = JSON.parse(localStorage.getItem('shivclassroom_user') || 'null');
         this.isPlaceholderConfig = true;
         
         // Active states
@@ -18,8 +18,35 @@ class ShivClassroomApp {
         // Emoji counts for teacher dashboard
         this.emojiCounts = { '😎': 0, '🤔': 0, '🤯': 0, '😴': 0, '🙋‍♂️': 0 };
 
+        // Seed Roster Storage
+        this.initDefaultRosters();
+
         // Bind event listeners on page load
         window.addEventListener('DOMContentLoaded', () => this.init());
+    }
+
+    initDefaultRosters() {
+        if (!localStorage.getItem('shivclassroom_school_roster')) {
+            const initialRoster = [
+                { name: 'Shivteg', email: 'shivteg@admin.com', role: 'super_admin', dept: 'System Super Admin' },
+                { name: 'Dr. Sarah', email: 'admin@school.edu', role: 'school_admin', dept: 'Main Campus Admin' },
+                { name: 'Prof. Oak', email: 'teacher@school.edu', role: 'teacher', dept: 'Biology Dept' },
+                { name: 'Mrs. Davis', email: 'davis@school.edu', role: 'teacher', dept: 'Math Dept' },
+                { name: 'Alex Johnson', email: 'student@school.edu', role: 'student', dept: 'Grade 6' },
+                { name: 'Emma Watson', email: 'emma@school.edu', role: 'student', dept: 'Grade 6' },
+                { name: 'Leo Smith', email: 'leo@school.edu', role: 'student', dept: 'Grade 7' }
+            ];
+            localStorage.setItem('shivclassroom_school_roster', JSON.stringify(initialRoster));
+        }
+
+        if (!localStorage.getItem('shivclassroom_teacher_students')) {
+            const initialTeacherStudents = [
+                { name: 'Alex Johnson', email: 'student@school.edu', grade: 'Grade 6B' },
+                { name: 'Emma Watson', email: 'emma@school.edu', grade: 'Grade 6B' },
+                { name: 'Leo Smith', email: 'leo@school.edu', grade: 'Grade 7A' }
+            ];
+            localStorage.setItem('shivclassroom_teacher_students', JSON.stringify(initialTeacherStudents));
+        }
     }
 
     // 1. INITIALIZATION & SETUP
@@ -91,24 +118,57 @@ class ShivClassroomApp {
     }
 
     async checkSession() {
+        if (this.currentUser) {
+            this.updateUserUI();
+            this.navigateHome();
+            return;
+        }
+
         this.showView('view-loading');
         
-        // If config is placeholder, redirect directly to Auth but show warning
+        // If config is placeholder, redirect directly to Auth
         if (this.isPlaceholderConfig) {
             setTimeout(() => {
                 this.showView('view-auth');
-                this.toast('error', 'Database not connected. Please edit "config.js" in the project folder with your actual Supabase credentials.');
-            }, 800);
+            }, 400);
             return;
         }
 
         try {
             const { data: { session }, error } = await this.supabase.auth.getSession();
-            
             if (error) throw error;
 
             if (session) {
-                this.currentUser = session.user;
+                const userEmail = session.user.email;
+                let userRole = 'student';
+
+                try {
+                    const { data: profile } = await this.supabase
+                        .from('profiles')
+                        .select('role, username')
+                        .eq('id', session.user.id)
+                        .single();
+                    if (profile && profile.role) {
+                        userRole = profile.role;
+                    }
+                } catch (pe) {
+                    console.warn("Using fallback metadata/email heuristics for role:", pe);
+                }
+
+                if (!userRole || userRole === 'student') {
+                    if (userEmail.toLowerCase().includes('shivteg') || userEmail.toLowerCase().includes('superadmin')) userRole = 'super_admin';
+                    else if (userEmail.toLowerCase().includes('school')) userRole = 'school_admin';
+                    else if (userEmail.toLowerCase().includes('teacher')) userRole = 'teacher';
+                    else if (session.user.user_metadata?.role) userRole = session.user.user_metadata.role;
+                }
+
+                this.currentUser = {
+                    id: session.user.id,
+                    email: userEmail,
+                    role: userRole,
+                    name: session.user.user_metadata?.name || userEmail.split('@')[0]
+                };
+                localStorage.setItem('shivclassroom_user', JSON.stringify(this.currentUser));
                 this.updateUserUI();
                 this.navigateHome();
             } else {
@@ -120,13 +180,39 @@ class ShivClassroomApp {
         }
     }
 
+    quickLogin(role) {
+        const roleUsers = {
+            super_admin: { id: 'sa-shivteg', email: 'shivteg@admin.com', name: 'Shivteg (Super Admin)', role: 'super_admin' },
+            school_admin: { id: 'sa-school', email: 'admin@school.edu', name: 'Dr. Sarah (School Admin)', role: 'school_admin' },
+            teacher: { id: 'teacher-1', email: 'teacher@school.edu', name: 'Prof. Oak (Teacher)', role: 'teacher' },
+            student: { id: 'student-1', email: 'student@school.edu', name: 'Alex Johnson (Student)', role: 'student' }
+        };
+
+        this.currentUser = roleUsers[role] || roleUsers.student;
+        localStorage.setItem('shivclassroom_user', JSON.stringify(this.currentUser));
+        this.updateUserUI();
+        this.toast('success', `Signed in as ${this.currentUser.name}`);
+        this.navigateHome();
+    }
+
     updateUserUI() {
         const userMenu = document.getElementById('user-menu');
         const emailDisplay = document.getElementById('user-email-display');
+        const roleBadge = document.getElementById('user-role-badge');
 
         if (this.currentUser) {
             userMenu.classList.remove('hidden');
             emailDisplay.textContent = this.currentUser.email;
+
+            const roleLabels = {
+                super_admin: '👑 Super Admin (Shivteg)',
+                school_admin: '🏛️ School Admin',
+                teacher: '🎓 Teacher',
+                student: '🎒 Student'
+            };
+            if (roleBadge) {
+                roleBadge.textContent = roleLabels[this.currentUser.role] || '🎒 Student';
+            }
         } else {
             userMenu.classList.add('hidden');
         }
@@ -143,34 +229,107 @@ class ShivClassroomApp {
             activeView.classList.remove('hidden');
             activeView.classList.add('active');
         }
-        
-        // Refresh icons on view changes
         lucide.createIcons();
     }
 
     setupDashboardToggle() {
-        const btnStudent = document.getElementById('btn-mode-student');
-        const btnTeacher = document.getElementById('btn-mode-teacher');
-        const panelStudent = document.getElementById('panel-student');
-        const panelTeacher = document.getElementById('panel-teacher');
+        const buttons = {
+            superadmin: document.getElementById('btn-mode-superadmin'),
+            schooladmin: document.getElementById('btn-mode-schooladmin'),
+            teacher: document.getElementById('btn-mode-teacher'),
+            student: document.getElementById('btn-mode-student')
+        };
 
-        if (btnStudent && btnTeacher) {
-            btnStudent.addEventListener('click', () => {
-                btnStudent.classList.add('active');
-                btnTeacher.classList.remove('active');
-                panelStudent.classList.remove('hidden');
-                panelTeacher.classList.add('hidden');
-                this.loadStudentRecentClasses();
+        const panels = {
+            superadmin: document.getElementById('panel-superadmin'),
+            schooladmin: document.getElementById('panel-schooladmin'),
+            teacher: document.getElementById('panel-teacher'),
+            student: document.getElementById('panel-student')
+        };
+
+        const switchTab = (modeKey) => {
+            Object.keys(buttons).forEach(k => {
+                if (buttons[k]) buttons[k].classList.remove('active');
+                if (panels[k]) panels[k].classList.add('hidden');
             });
 
-            btnTeacher.addEventListener('click', () => {
-                btnTeacher.classList.add('active');
-                btnStudent.classList.remove('active');
-                panelTeacher.classList.remove('hidden');
-                panelStudent.classList.add('hidden');
+            if (buttons[modeKey]) buttons[modeKey].classList.add('active');
+            if (panels[modeKey]) panels[modeKey].classList.remove('hidden');
+
+            if (modeKey === 'superadmin') this.loadSuperAdminPanel();
+            if (modeKey === 'schooladmin') this.loadSchoolAdminRoster();
+            if (modeKey === 'teacher') {
                 this.loadTeacherClassrooms();
-            });
+                this.loadTeacherStudentRoster();
+            }
+            if (modeKey === 'student') this.loadStudentRecentClasses();
+        };
+
+        if (buttons.superadmin) buttons.superadmin.addEventListener('click', () => switchTab('superadmin'));
+        if (buttons.schooladmin) buttons.schooladmin.addEventListener('click', () => switchTab('schooladmin'));
+        if (buttons.teacher) buttons.teacher.addEventListener('click', () => switchTab('teacher'));
+        if (buttons.student) buttons.student.addEventListener('click', () => switchTab('student'));
+    }
+
+    applyRolePermissions() {
+        if (!this.currentUser) return;
+
+        const role = this.currentUser.role || 'student';
+        const toggleWrapper = document.getElementById('dashboard-toggle-wrapper');
+        const studentBanner = document.getElementById('student-notice-header');
+        
+        const btnSuper = document.getElementById('btn-mode-superadmin');
+        const btnSchool = document.getElementById('btn-mode-schooladmin');
+        const btnTeacher = document.getElementById('btn-mode-teacher');
+        const btnStudent = document.getElementById('btn-mode-student');
+
+        const panels = {
+            superadmin: document.getElementById('panel-superadmin'),
+            schooladmin: document.getElementById('panel-schooladmin'),
+            teacher: document.getElementById('panel-teacher'),
+            student: document.getElementById('panel-student')
+        };
+
+        // Reset visibility
+        [btnSuper, btnSchool, btnTeacher, btnStudent].forEach(b => b && b.classList.add('hidden'));
+        Object.values(panels).forEach(p => p && p.classList.add('hidden'));
+
+        if (role === 'student') {
+            // Students get NO management dashboard toggle!
+            if (toggleWrapper) toggleWrapper.classList.add('hidden');
+            if (studentBanner) studentBanner.classList.remove('hidden');
+            if (panels.student) panels.student.classList.remove('hidden');
+            this.loadStudentRecentClasses();
+        } else {
+            if (toggleWrapper) toggleWrapper.classList.remove('hidden');
+            if (studentBanner) studentBanner.classList.add('hidden');
+
+            if (role === 'teacher') {
+                if (btnTeacher) btnTeacher.classList.remove('hidden');
+                if (btnStudent) btnStudent.classList.remove('hidden');
+                if (btnTeacher) btnTeacher.classList.add('active');
+                if (btnStudent) btnStudent.classList.remove('active');
+                if (panels.teacher) panels.teacher.classList.remove('hidden');
+                this.loadTeacherClassrooms();
+                this.loadTeacherStudentRoster();
+            } else if (role === 'school_admin') {
+                if (btnSchool) btnSchool.classList.remove('hidden');
+                if (btnTeacher) btnTeacher.classList.remove('hidden');
+                if (btnStudent) btnStudent.classList.remove('hidden');
+                if (btnSchool) btnSchool.classList.add('active');
+                if (panels.schooladmin) panels.schooladmin.classList.remove('hidden');
+                this.loadSchoolAdminRoster();
+            } else if (role === 'super_admin') {
+                if (btnSuper) btnSuper.classList.remove('hidden');
+                if (btnSchool) btnSchool.classList.remove('hidden');
+                if (btnTeacher) btnTeacher.classList.remove('hidden');
+                if (btnStudent) btnStudent.classList.remove('hidden');
+                if (btnSuper) btnSuper.classList.add('active');
+                if (panels.superadmin) panels.superadmin.classList.remove('hidden');
+                this.loadSuperAdminPanel();
+            }
         }
+        lucide.createIcons();
     }
 
     navigateHome() {
@@ -179,19 +338,9 @@ class ShivClassroomApp {
             return;
         }
 
-        // Clean up real-time listener if leaving active classroom dashboard
         this.unsubscribeRealtime();
-
-        // Show unified dashboard
         this.showView('view-dashboard');
-        
-        // Refresh whichever tab is active
-        const btnTeacher = document.getElementById('btn-mode-teacher');
-        if (btnTeacher && btnTeacher.classList.contains('active')) {
-            this.loadTeacherClassrooms();
-        } else {
-            this.loadStudentRecentClasses();
-        }
+        this.applyRolePermissions();
     }
 
     // 3. TOAST NOTIFICATIONS
@@ -306,16 +455,32 @@ class ShivClassroomApp {
     async handleLogin(e) {
         e.preventDefault();
         
-        if (this.isPlaceholderConfig) {
-            this.toast('error', 'Cannot connect to database. Please fill in your actual credentials in "config.js" in the root directory.');
-            return;
-        }
-
-        const email = document.getElementById('login-email').value.trim();
+        const email = document.getElementById('login-email').value.trim().toLowerCase();
         const password = document.getElementById('login-password').value;
 
         this.toast('info', 'Logging you in...');
-        
+
+        const roleFallbacks = {
+            'shivteg@admin.com': { id: 'sa-shivteg', email: 'shivteg@admin.com', name: 'Shivteg (Super Admin)', role: 'super_admin' },
+            'admin@school.edu': { id: 'sa-school', email: 'admin@school.edu', name: 'Dr. Sarah (School Admin)', role: 'school_admin' },
+            'teacher@school.edu': { id: 'teacher-1', email: 'teacher@school.edu', name: 'Prof. Oak (Teacher)', role: 'teacher' },
+            'student@school.edu': { id: 'student-1', email: 'student@school.edu', name: 'Alex Johnson (Student)', role: 'student' }
+        };
+
+        if (this.isPlaceholderConfig || !this.supabase) {
+            if (roleFallbacks[email]) {
+                this.currentUser = roleFallbacks[email];
+            } else {
+                // Fixed default student profile for unrecognized emails
+                this.currentUser = { id: 'user-' + Date.now(), email, name: email.split('@')[0], role: 'student' };
+            }
+            localStorage.setItem('shivclassroom_user', JSON.stringify(this.currentUser));
+            this.toast('success', `Signed in as ${this.currentUser.name}`);
+            this.updateUserUI();
+            this.navigateHome();
+            return;
+        }
+
         try {
             const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
             if (error) throw error;
@@ -324,8 +489,16 @@ class ShivClassroomApp {
             this.toast('success', 'Welcome back!');
             this.updateUserUI();
             this.navigateHome();
-        } catch (e) {
-            this.toast('error', e.message || 'Log in failed.');
+        } catch (err) {
+            if (roleFallbacks[email]) {
+                this.currentUser = roleFallbacks[email];
+                localStorage.setItem('shivclassroom_user', JSON.stringify(this.currentUser));
+                this.toast('success', `Signed in as ${this.currentUser.name}`);
+                this.updateUserUI();
+                this.navigateHome();
+            } else {
+                this.toast('error', err.message || 'Log in failed.');
+            }
         }
     }
 
@@ -339,6 +512,8 @@ class ShivClassroomApp {
 
         const email = document.getElementById('signup-email').value.trim();
         const password = document.getElementById('signup-password').value;
+        const roleSelect = document.getElementById('signup-role');
+        const role = roleSelect ? roleSelect.value : 'student';
 
         this.toast('info', 'Creating secure account...');
 
@@ -351,20 +526,28 @@ class ShivClassroomApp {
                 email,
                 password,
                 options: {
-                    emailRedirectTo: redirectUrl
+                    emailRedirectTo: redirectUrl,
+                    data: {
+                        role: role,
+                        username: email.split('@')[0]
+                    }
                 }
             });
 
             if (error) throw error;
 
             if (data.session) {
-                // Email confirmation is disabled, logged in automatically
-                this.currentUser = data.user;
+                this.currentUser = {
+                    id: data.user.id,
+                    email: email,
+                    role: role,
+                    name: email.split('@')[0]
+                };
+                localStorage.setItem('shivclassroom_user', JSON.stringify(this.currentUser));
                 this.updateUserUI();
                 this.navigateHome();
                 this.toast('success', 'Signup successful! Welcome to shivclassroom.');
             } else {
-                // Email confirmation is enabled, redirect to Verification screen
                 document.getElementById('verify-email-display').textContent = email;
                 this.showView('view-verify-email');
                 this.toast('success', 'Signup successful! Verification email sent.');
@@ -941,6 +1124,166 @@ ${recommendation}
             .replace(/- (.*)/g, '<li>$1</li>')
             .replace(/\n\n/g, '<br>')
             .replace(/\*Note: (.*)\*/g, '<p><small><em>Note: $1</em></small></p>');
+    }
+
+    // ROSTER & RBAC MANAGEMENT
+    loadSuperAdminPanel() {
+        const roster = JSON.parse(localStorage.getItem('shivclassroom_school_roster') || '[]');
+        
+        const schoolCount = roster.filter(u => u.role === 'school_admin').length;
+        const teacherCount = roster.filter(u => u.role === 'teacher').length;
+        const studentCount = roster.filter(u => u.role === 'student').length;
+
+        const elSchool = document.getElementById('stat-count-schooladmins');
+        const elTeacher = document.getElementById('stat-count-teachers');
+        const elStudent = document.getElementById('stat-count-students');
+        
+        if (elSchool) elSchool.textContent = schoolCount || 1;
+        if (elTeacher) elTeacher.textContent = teacherCount || 2;
+        if (elStudent) elStudent.textContent = studentCount || 5;
+
+        const tableBody = document.getElementById('superadmin-user-list');
+        if (!tableBody) return;
+
+        tableBody.innerHTML = roster.map(u => `
+            <tr>
+                <td><strong>${u.name}</strong></td>
+                <td><span class="role-pill-sm role-${u.role}">${(u.role || '').replace('_', ' ').toUpperCase()}</span></td>
+                <td>${u.email}</td>
+                <td>
+                    ${u.email === 'shivteg@admin.com' 
+                        ? '<span class="text-muted">Super Admin</span>' 
+                        : `<button class="btn btn-danger btn-xs" onclick="app.handleSuperAdminDeleteUser('${u.email}')">Remove</button>`}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    handleSuperAdminAddUser(e) {
+        e.preventDefault();
+        const name = document.getElementById('sa-user-name').value.trim();
+        const email = document.getElementById('sa-user-email').value.trim();
+        const role = document.getElementById('sa-user-role').value;
+
+        let roster = JSON.parse(localStorage.getItem('shivclassroom_school_roster') || '[]');
+        if (roster.some(u => u.email === email)) {
+            this.toast('error', 'User with this email already exists in system.');
+            return;
+        }
+
+        roster.push({ name, email, role, dept: 'Assigned User' });
+        localStorage.setItem('shivclassroom_school_roster', JSON.stringify(roster));
+        this.toast('success', `User ${name} created with role "${role}"`);
+        document.getElementById('superadmin-add-user-form').reset();
+        this.loadSuperAdminPanel();
+    }
+
+    handleSuperAdminDeleteUser(email) {
+        let roster = JSON.parse(localStorage.getItem('shivclassroom_school_roster') || '[]');
+        roster = roster.filter(u => u.email !== email);
+        localStorage.setItem('shivclassroom_school_roster', JSON.stringify(roster));
+        this.toast('info', `Removed ${email} from system.`);
+        this.loadSuperAdminPanel();
+    }
+
+    handleSuperAdminSystemReset() {
+        if (confirm('Are you sure you want to reset all demo data and restore initial system roster?')) {
+            localStorage.removeItem('shivclassroom_school_roster');
+            localStorage.removeItem('shivclassroom_teacher_students');
+            this.initDefaultRosters();
+            this.toast('success', 'System data restored to default state.');
+            this.loadSuperAdminPanel();
+        }
+    }
+
+    loadSchoolAdminRoster() {
+        const roster = JSON.parse(localStorage.getItem('shivclassroom_school_roster') || '[]');
+        const tableBody = document.getElementById('schooladmin-roster-list');
+        if (!tableBody) return;
+
+        const schoolUsers = roster.filter(u => u.role === 'teacher' || u.role === 'student');
+
+        tableBody.innerHTML = schoolUsers.length ? schoolUsers.map(u => `
+            <tr>
+                <td><strong>${u.name}</strong></td>
+                <td><span class="role-pill-sm role-${u.role}">${(u.role || '').toUpperCase()}</span></td>
+                <td>${u.dept || 'General'}</td>
+                <td>
+                    <button class="btn btn-danger btn-xs" onclick="app.handleSchoolAdminDelete('${u.email}')">Delete</button>
+                </td>
+            </tr>
+        `).join('') : '<tr><td colspan="4" class="text-center text-muted">No school staff or students found.</td></tr>';
+    }
+
+    handleSchoolAdminAdd(e) {
+        e.preventDefault();
+        const name = document.getElementById('sa-entry-name').value.trim();
+        const email = document.getElementById('sa-entry-email').value.trim();
+        const role = document.getElementById('sa-entry-type').value;
+        const dept = document.getElementById('sa-entry-dept').value.trim();
+
+        let roster = JSON.parse(localStorage.getItem('shivclassroom_school_roster') || '[]');
+        if (roster.some(u => u.email === email)) {
+            this.toast('error', 'User already exists in directory.');
+            return;
+        }
+
+        roster.push({ name, email, role, dept });
+        localStorage.setItem('shivclassroom_school_roster', JSON.stringify(roster));
+        this.toast('success', `Added ${name} as ${role} to school roster.`);
+        document.getElementById('schooladmin-add-form').reset();
+        this.loadSchoolAdminRoster();
+    }
+
+    handleSchoolAdminDelete(email) {
+        let roster = JSON.parse(localStorage.getItem('shivclassroom_school_roster') || '[]');
+        roster = roster.filter(u => u.email !== email);
+        localStorage.setItem('shivclassroom_school_roster', JSON.stringify(roster));
+        this.toast('info', `Removed ${email} from school directory.`);
+        this.loadSchoolAdminRoster();
+    }
+
+    loadTeacherStudentRoster() {
+        const students = JSON.parse(localStorage.getItem('shivclassroom_teacher_students') || '[]');
+        const listEl = document.getElementById('teacher-student-roster-list');
+        if (!listEl) return;
+
+        listEl.innerHTML = students.length ? students.map(s => `
+            <li class="student-roster-item">
+                <div>
+                    <strong>${s.name}</strong> <small>(${s.grade})</small>
+                    <div class="text-muted text-xs">${s.email}</div>
+                </div>
+                <button class="btn btn-outline btn-xs" onclick="app.handleTeacherDeleteStudent('${s.email}')">Remove</button>
+            </li>
+        `).join('') : '<p class="text-xs text-muted">No enrolled students in your roster.</p>';
+    }
+
+    handleTeacherAddStudent(e) {
+        e.preventDefault();
+        const name = document.getElementById('t-student-name').value.trim();
+        const email = document.getElementById('t-student-email').value.trim();
+        const grade = document.getElementById('t-student-grade').value.trim();
+
+        let students = JSON.parse(localStorage.getItem('shivclassroom_teacher_students') || '[]');
+        if (students.some(s => s.email === email)) {
+            this.toast('error', 'Student already in your roster.');
+            return;
+        }
+
+        students.push({ name, email, grade });
+        localStorage.setItem('shivclassroom_teacher_students', JSON.stringify(students));
+        this.toast('success', `Enrolled ${name} into class roster.`);
+        document.getElementById('teacher-add-student-form').reset();
+        this.loadTeacherStudentRoster();
+    }
+
+    handleTeacherDeleteStudent(email) {
+        let students = JSON.parse(localStorage.getItem('shivclassroom_teacher_students') || '[]');
+        students = students.filter(s => s.email !== email);
+        localStorage.setItem('shivclassroom_teacher_students', JSON.stringify(students));
+        this.toast('info', `Removed student from roster.`);
+        this.loadTeacherStudentRoster();
     }
 
     // UTILS

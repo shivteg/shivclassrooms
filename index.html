@@ -39,7 +39,8 @@
                 <!-- User Profile & Log Out -->
                 <div class="user-profile-menu hidden" id="user-menu">
                     <div class="user-badge">
-                        <span class="user-email" id="user-email-display">student@school.com</span>
+                        <span class="role-pill" id="user-role-badge">👑 Super Admin (Shivteg)</span>
+                        <span class="user-email" id="user-email-display">shivteg@admin.com</span>
                     </div>
                     <button class="btn btn-danger btn-sm btn-icon" id="logout-btn">
                         <i data-lucide="log-out"></i>
@@ -65,14 +66,51 @@
         </section>
 
 
-        <!-- 3. AUTHENTICATION VIEW -->
+        <!-- 3. AUTHENTICATION VIEW WITH ROLE SELECTOR -->
         <section id="view-auth" class="view-section hidden">
             <div class="auth-container">
                 <div class="auth-card">
                     <div class="auth-header">
                         <h2>Welcome to shivclassroom</h2>
-                        <p>The safe space to share your understanding.</p>
+                        <p>Select your role or sign in with your email account.</p>
                     </div>
+
+                    <!-- Role Quick Switcher -->
+                    <div class="role-selector-box">
+                        <span class="role-box-label">⚡ Direct Role Access:</span>
+                        <div class="role-buttons-grid">
+                            <button type="button" class="role-select-btn role-superadmin" onclick="app.quickLogin('super_admin')">
+                                <span class="role-icon">👑</span>
+                                <div class="role-details">
+                                    <strong>Super Admin (Shivteg)</strong>
+                                    <small>Full control over everything</small>
+                                </div>
+                            </button>
+                            <button type="button" class="role-select-btn role-schooladmin" onclick="app.quickLogin('school_admin')">
+                                <span class="role-icon">🏛️</span>
+                                <div class="role-details">
+                                    <strong>School Admin</strong>
+                                    <small>Manage Teachers & Students</small>
+                                </div>
+                            </button>
+                            <button type="button" class="role-select-btn role-teacher" onclick="app.quickLogin('teacher')">
+                                <span class="role-icon">🎓</span>
+                                <div class="role-details">
+                                    <strong>Teacher</strong>
+                                    <small>Add Students & Classrooms</small>
+                                </div>
+                            </button>
+                            <button type="button" class="role-select-btn role-student" onclick="app.quickLogin('student')">
+                                <span class="role-icon">🎒</span>
+                                <div class="role-details">
+                                    <strong>Student</strong>
+                                    <small>Visit Site (No Dashboard)</small>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="auth-divider"><span>OR SIGN IN WITH EMAIL</span></div>
 
                     <!-- Auth Tabs -->
                     <div class="auth-tabs">
@@ -109,6 +147,17 @@
                             </div>
                         </div>
                         <div class="form-group">
+                            <label for="signup-role">Select Role</label>
+                            <div class="input-icon-wrapper">
+                                <i data-lucide="user-check"></i>
+                                <select id="signup-role" class="custom-select" required>
+                                    <option value="student">Student (Visit & Join)</option>
+                                    <option value="teacher">Teacher (Add Students & Classrooms)</option>
+                                    <option value="school_admin">School Admin (Manage Teachers & Students)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
                             <label for="signup-password">Password</label>
                             <div class="input-icon-wrapper">
                                 <i data-lucide="lock"></i>
@@ -136,19 +185,197 @@
             </div>
         </section>
 
-        <!-- 4. UNIFIED DASHBOARD -->
+        <!-- 4. UNIFIED ROLE-BASED DASHBOARD -->
         <section id="view-dashboard" class="view-section hidden">
-            <!-- Mode Toggle Switcher -->
-            <div class="dashboard-toggle-wrapper animate-fade-in">
+            <!-- Mode Toggle Switcher (Hidden for Students, Dynamic based on Role) -->
+            <div class="dashboard-toggle-wrapper animate-fade-in" id="dashboard-toggle-wrapper">
                 <div class="dashboard-toggle-container">
-                    <button class="toggle-mode-btn active" id="btn-mode-student" data-mode="student">
-                        <i data-lucide="book-open"></i>
-                        <span>Student Desk</span>
+                    <button class="toggle-mode-btn hidden" id="btn-mode-superadmin" data-mode="superadmin">
+                        <i data-lucide="shield-check"></i>
+                        <span>👑 Shivteg Control</span>
+                    </button>
+                    <button class="toggle-mode-btn hidden" id="btn-mode-schooladmin" data-mode="schooladmin">
+                        <i data-lucide="building"></i>
+                        <span>🏛️ School Admin</span>
                     </button>
                     <button class="toggle-mode-btn" id="btn-mode-teacher" data-mode="teacher">
                         <i data-lucide="graduation-cap"></i>
-                        <span>Teacher Console</span>
+                        <span>🎓 Teacher Console</span>
                     </button>
+                    <button class="toggle-mode-btn active" id="btn-mode-student" data-mode="student">
+                        <i data-lucide="book-open"></i>
+                        <span>🎒 Student Desk</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Student Notice Header (Visible ONLY to Students) -->
+            <div id="student-notice-header" class="student-notice-banner hidden">
+                <span>🎒 <strong>Student Account:</strong> Full access to use the site and join classrooms. Management dashboard disabled.</span>
+            </div>
+
+            <!-- SUPER ADMIN PANEL (SHIVTEG FULL CONTROL) -->
+            <div id="panel-superadmin" class="dashboard-panel-content hidden">
+                <div class="superadmin-hero">
+                    <div>
+                        <h2>👑 Shivteg Super Admin Control Center</h2>
+                        <p>Supreme authority over all schools, admins, teachers, students, and system databases.</p>
+                    </div>
+                    <button class="btn btn-danger btn-sm" id="btn-reset-system" onclick="app.handleSuperAdminSystemReset()">
+                        <i data-lucide="alert-octagon"></i> Wipe / Reset System Data
+                    </button>
+                </div>
+
+                <div class="stats-overview-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">🏛️</div>
+                        <div class="stat-body">
+                            <span class="stat-label">School Admins</span>
+                            <strong class="stat-count" id="stat-count-schooladmins">1</strong>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🎓</div>
+                        <div class="stat-body">
+                            <span class="stat-label">Teachers</span>
+                            <strong class="stat-count" id="stat-count-teachers">3</strong>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🎒</div>
+                        <div class="stat-body">
+                            <span class="stat-label">Students</span>
+                            <strong class="stat-count" id="stat-count-students">12</strong>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🏫</div>
+                        <div class="stat-body">
+                            <span class="stat-label">Active Classrooms</span>
+                            <strong class="stat-count" id="stat-count-classrooms">4</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid mt-6">
+                    <!-- Super Admin: Add School Admin / Teacher / Student -->
+                    <div class="card create-class-card animate-fade-in">
+                        <div class="card-header">
+                            <h2>Grant / Add System User</h2>
+                            <p class="subtitle">Create new School Admin, Teacher, or Student with instant role privileges.</p>
+                        </div>
+                        <form id="superadmin-add-user-form" onsubmit="app.handleSuperAdminAddUser(event)">
+                            <div class="form-group">
+                                <label for="sa-user-name">Full Name</label>
+                                <input type="text" id="sa-user-name" placeholder="e.g., Prof. Davis" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="sa-user-email">Email Address</label>
+                                <input type="email" id="sa-user-email" placeholder="user@school.edu" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="sa-user-role">Role Assignment</label>
+                                <select id="sa-user-role" class="custom-select" required>
+                                    <option value="school_admin">School Admin (Manage Teachers & Students)</option>
+                                    <option value="teacher">Teacher (Add Students & Classrooms)</option>
+                                    <option value="student">Student (Visit & Join)</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block btn-icon">
+                                <i data-lucide="user-plus"></i>
+                                <span>Create User</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- System Users Roster -->
+                    <div class="card active-classrooms-card animate-fade-in">
+                        <div class="card-header">
+                            <h3><i data-lucide="shield"></i> Master System Roster</h3>
+                        </div>
+                        <div class="roster-table-wrapper">
+                            <table class="roster-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Role</th>
+                                        <th>Email</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="superadmin-user-list">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCHOOL ADMIN CONSOLE -->
+            <div id="panel-schooladmin" class="dashboard-panel-content hidden">
+                <div class="panel-header-banner">
+                    <div>
+                        <h2>🏛️ School Admin Console</h2>
+                        <p>Manage school staff, teacher assignments, and student rosters.</p>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid mt-4">
+                    <!-- Add Teacher / Add Student Card -->
+                    <div class="card create-class-card animate-fade-in">
+                        <div class="card-header">
+                            <h2>Add Teacher or Student</h2>
+                            <p class="subtitle">Enroll new teachers or students into your school directory.</p>
+                        </div>
+                        <form id="schooladmin-add-form" onsubmit="app.handleSchoolAdminAdd(event)">
+                            <div class="form-group">
+                                <label for="sa-entry-name">Full Name</label>
+                                <input type="text" id="sa-entry-name" placeholder="e.g., Jane Doe" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="sa-entry-email">Email Address</label>
+                                <input type="email" id="sa-entry-email" placeholder="jane@school.edu" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="sa-entry-type">User Type</label>
+                                <select id="sa-entry-type" class="custom-select" required>
+                                    <option value="teacher">Teacher (Manage classrooms & students)</option>
+                                    <option value="student">Student (Classroom participant)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="sa-entry-dept">Department / Grade</label>
+                                <input type="text" id="sa-entry-dept" placeholder="e.g., Science Dept / Grade 6" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block btn-icon">
+                                <i data-lucide="plus-circle"></i>
+                                <span>Add to School Roster</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- School Directory -->
+                    <div class="card active-classrooms-card animate-fade-in">
+                        <div class="card-header">
+                            <h3><i data-lucide="users"></i> School Staff & Student Directory</h3>
+                        </div>
+                        <div class="roster-table-wrapper">
+                            <table class="roster-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Dept / Grade</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="schooladmin-roster-list">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -220,17 +447,48 @@
                         </form>
                     </div>
 
-                    <!-- Active Classrooms List -->
-                    <div class="card active-classrooms-card animate-fade-in delay-100">
-                        <div class="card-header">
-                            <h3><i data-lucide="layers"></i> Created Classrooms</h3>
-                        </div>
-                        <div class="classrooms-list-container">
-                            <div class="empty-state" id="teacher-classes-empty">
-                                <p>You haven't created any classrooms yet. Set one up on the left!</p>
+                    <!-- Active Classrooms & Add Student Section -->
+                    <div class="space-y-6">
+                        <div class="card active-classrooms-card animate-fade-in delay-100">
+                            <div class="card-header">
+                                <h3><i data-lucide="layers"></i> Created Classrooms</h3>
                             </div>
-                            <div class="classrooms-grid hidden" id="teacher-classes-list">
-                                <!-- Populated by JS -->
+                            <div class="classrooms-list-container">
+                                <div class="empty-state" id="teacher-classes-empty">
+                                    <p>You haven't created any classrooms yet. Set one up on the left!</p>
+                                </div>
+                                <div class="classrooms-grid hidden" id="teacher-classes-list">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Teacher Add Students Box -->
+                        <div class="card animate-fade-in">
+                            <div class="card-header">
+                                <h3><i data-lucide="user-plus"></i> Add Students to Roster</h3>
+                                <p class="subtitle">Teachers can enroll new students into their classes.</p>
+                            </div>
+                            <form id="teacher-add-student-form" onsubmit="app.handleTeacherAddStudent(event)" class="grid gap-3">
+                                <div class="form-group">
+                                    <input type="text" id="t-student-name" placeholder="Student Name (e.g. Leo Smith)" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="email" id="t-student-email" placeholder="Student Email (e.g. leo@school.edu)" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" id="t-student-grade" placeholder="Grade / Section (e.g. Grade 6B)" required>
+                                </div>
+                                <button type="submit" class="btn btn-secondary btn-block btn-sm">
+                                    <i data-lucide="plus"></i> Add Student
+                                </button>
+                            </form>
+
+                            <div class="mt-4">
+                                <h4 class="text-xs uppercase font-bold text-muted mb-2">My Enrolled Students</h4>
+                                <ul id="teacher-student-roster-list" class="student-roster-list">
+                                    <!-- Populated by JS -->
+                                </ul>
                             </div>
                         </div>
                     </div>
