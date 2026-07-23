@@ -458,38 +458,27 @@ class ShivClassroomApp {
         const email = document.getElementById('login-email').value.trim().toLowerCase();
         const password = document.getElementById('login-password').value;
 
-        this.toast('info', 'Logging you in...');
+        this.toast('info', 'Verifying credentials...');
 
         const roleFallbacks = {
-            'shivteg@admin.com': { id: 'sa-shivteg', email: 'shivteg@admin.com', password: 'teg2172014', name: 'Shivteg (Super Admin)', role: 'super_admin' },
-            'admin@school.edu': { id: 'sa-school', email: 'admin@school.edu', password: 'SchoolAdmin123!', name: 'Dr. Sarah (School Admin)', role: 'school_admin' },
-            'teacher@school.edu': { id: 'teacher-1', email: 'teacher@school.edu', password: 'Teacher123!', name: 'Prof. Oak (Teacher)', role: 'teacher' },
-            'student@school.edu': { id: 'student-1', email: 'student@school.edu', password: 'Student123!', name: 'Alex Johnson (Student)', role: 'student' }
+            'shivteg@admin.com': { id: '00000000-0000-4000-a000-000000000001', email: 'shivteg@admin.com', password: 'teg2172014', name: 'Shivteg (Super Admin)', role: 'super_admin' },
+            'admin@school.edu': { id: '00000000-0000-4000-a000-000000000002', email: 'admin@school.edu', password: 'SchoolAdmin123!', name: 'Dr. Sarah (School Admin)', role: 'school_admin' },
+            'teacher@school.edu': { id: '00000000-0000-4000-a000-000000000003', email: 'teacher@school.edu', password: 'Teacher123!', name: 'Prof. Oak (Teacher)', role: 'teacher' },
+            'student@school.edu': { id: '00000000-0000-4000-a000-000000000004', email: 'student@school.edu', password: 'Student123!', name: 'Alex Johnson (Student)', role: 'student' }
         };
 
-        // Check if user exists in Super Admin created local roster
+        // Check master roster for Super Admin / Admin created accounts
         const roster = JSON.parse(localStorage.getItem('shivclassroom_school_roster') || '[]');
         const rosterMatch = roster.find(u => u.email.toLowerCase() === email);
 
-        if (this.isPlaceholderConfig || !this.supabase) {
-            if (email === 'shivteg@admin.com') {
-                if (password !== 'teg2172014') {
-                    this.toast('error', 'Invalid password for Super Admin shivteg@admin.com.');
-                    return;
-                }
-                this.currentUser = roleFallbacks[email];
-            } else if (rosterMatch) {
-                if (rosterMatch.password && rosterMatch.password !== password) {
-                    this.toast('error', 'Invalid password for this account.');
-                    return;
-                }
-                this.currentUser = { id: 'user-' + Date.now(), email: rosterMatch.email, name: rosterMatch.name, role: rosterMatch.role };
-            } else if (roleFallbacks[email]) {
-                this.currentUser = roleFallbacks[email];
-            } else {
-                // Public unregistered emails default to student role
-                this.currentUser = { id: 'user-' + Date.now(), email, name: email.split('@')[0], role: 'student' };
+        // 1. Validate fixed system accounts
+        if (roleFallbacks[email]) {
+            const expectedPassword = roleFallbacks[email].password;
+            if (password !== expectedPassword) {
+                this.toast('error', 'Invalid password. Access denied.');
+                return;
             }
+            this.currentUser = roleFallbacks[email];
             localStorage.setItem('shivclassroom_user', JSON.stringify(this.currentUser));
             this.toast('success', `Signed in as ${this.currentUser.name}`);
             this.updateUserUI();
@@ -497,31 +486,44 @@ class ShivClassroomApp {
             return;
         }
 
-        try {
-            const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
-            if (error) throw error;
-
-            this.currentUser = data.user;
-            this.toast('success', 'Welcome back!');
+        // 2. Validate accounts created by Super Admin in Roster
+        if (rosterMatch) {
+            if (rosterMatch.password && rosterMatch.password !== password) {
+                this.toast('error', 'Invalid password. Access denied.');
+                return;
+            }
+            this.currentUser = { 
+                id: this.generateUUID(), 
+                email: rosterMatch.email, 
+                name: rosterMatch.name, 
+                role: rosterMatch.role 
+            };
+            localStorage.setItem('shivclassroom_user', JSON.stringify(this.currentUser));
+            this.toast('success', `Signed in as ${this.currentUser.name}`);
             this.updateUserUI();
             this.navigateHome();
-        } catch (err) {
-            if (email === 'shivteg@admin.com' && password === 'teg2172014') {
-                this.currentUser = roleFallbacks[email];
-                localStorage.setItem('shivclassroom_user', JSON.stringify(this.currentUser));
-                this.toast('success', `Signed in as ${this.currentUser.name}`);
+            return;
+        }
+
+        // 3. Attempt Supabase Auth login if backend configured
+        if (this.supabase && !this.isPlaceholderConfig) {
+            try {
+                const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+
+                this.currentUser = data.user;
+                this.toast('success', 'Welcome back!');
                 this.updateUserUI();
                 this.navigateHome();
-            } else if (rosterMatch && (!rosterMatch.password || rosterMatch.password === password)) {
-                this.currentUser = { id: 'user-' + Date.now(), email: rosterMatch.email, name: rosterMatch.name, role: rosterMatch.role };
-                localStorage.setItem('shivclassroom_user', JSON.stringify(this.currentUser));
-                this.toast('success', `Signed in as ${this.currentUser.name}`);
-                this.updateUserUI();
-                this.navigateHome();
-            } else {
-                this.toast('error', err.message || 'Log in failed. Invalid credentials.');
+                return;
+            } catch (err) {
+                this.toast('error', 'Invalid email or password. Access denied.');
+                return;
             }
         }
+
+        // 4. If unrecognized email or wrong password, REJECT IMMEDIATELY!
+        this.toast('error', 'Invalid email or password. Access denied.');
     }
 
     async handleSignup(e) {
