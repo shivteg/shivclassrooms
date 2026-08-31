@@ -1,0 +1,104 @@
+{
+  "communities": {
+    "0": [
+      "app_shivclassroomapp_generaterandomcode",
+      "app_shivclassroomapp_generateuuid",
+      "app_shivclassroomapp_handlecreateclass",
+      "app_shivclassroomapp_handlejoinclass",
+      "app_shivclassroomapp_handlelogin",
+      "app_shivclassroomapp_handleresetclassroom",
+      "app_shivclassroomapp_handlesendfeedback",
+      "app_shivclassroomapp_openstudentclassroom",
+      "app_shivclassroomapp_saverecentclassroom",
+      "app_shivclassroomapp_setupeventlisteners",
+      "app_shivclassroomapp_toast"
+    ],
+    "1": [
+      "app_shivclassroomapp_applyrolepermissions",
+      "app_shivclassroomapp_handleschooladminadd",
+      "app_shivclassroomapp_handleschooladmindelete",
+      "app_shivclassroomapp_handleteacheraddstudent",
+      "app_shivclassroomapp_handleteacherdeletestudent",
+      "app_shivclassroomapp_loadschooladminroster",
+      "app_shivclassroomapp_loadstudentrecentclasses",
+      "app_shivclassroomapp_loadteacherclassrooms",
+      "app_shivclassroomapp_loadteacherstudentroster",
+      "app_shivclassroomapp_setupdashboardtoggle"
+    ],
+    "2": [
+      "app_shivclassroomapp_checksession",
+      "app_shivclassroomapp_handlelogout",
+      "app_shivclassroomapp_handlesignup",
+      "app_shivclassroomapp_navigatehome",
+      "app_shivclassroomapp_quicklogin",
+      "app_shivclassroomapp_showview",
+      "app_shivclassroomapp_updateuserui"
+    ],
+    "3": [
+      "app_shivclassroomapp",
+      "app_shivclassroomapp_callgeminiapi",
+      "app_shivclassroomapp_generateaireport",
+      "app_shivclassroomapp_rendermarkdownheuristics",
+      "app_shivclassroomapp_runlocalheuristicmodel"
+    ],
+    "4": [
+      "app_shivclassroomapp_fetchclassroomresponses",
+      "app_shivclassroomapp_openteacherclassroom",
+      "app_shivclassroomapp_subscriberealtime",
+      "app_shivclassroomapp_unsubscriberealtime",
+      "app_shivclassroomapp_updateanalyticsui"
+    ],
+    "5": [
+      "app_shivclassroomapp_init",
+      "app_shivclassroomapp_loaddatabaseconfig",
+      "app_shivclassroomapp_setuptheme",
+      "app_shivclassroomapp_updatethemeicon"
+    ],
+    "6": [
+      "app_shivclassroomapp_constructor",
+      "app_shivclassroomapp_handlesuperadminsystemreset",
+      "app_shivclassroomapp_initdefaultrosters"
+    ],
+    "7": [
+      "app_shivclassroomapp_handlesuperadminadduser",
+      "app_shivclassroomapp_handlesuperadmindeleteuser",
+      "app_shivclassroomapp_loadsuperadminpanel"
+    ],
+    "8": [
+      "app",
+      "app_app"
+    ],
+    "9": [
+      "config"
+    ]
+  },
+  "cohesion": {
+    "0": 0.2909090909090909,
+    "1": 0.26666666666666666,
+    "2": 0.5238095238095238,
+    "3": 0.7,
+    "4": 0.6,
+    "5": 0.5,
+    "6": 0.6666666666666666,
+    "7": 0.6666666666666666,
+    "8": 1.0,
+    "9": 1.0
+  },
+  "gods": [
+    {
+      "id": "app_shivclassroomapp",
+      "label": "ShivClassroomApp",
+      "degree": 48
+    },
+    {
+      "id": "app_app",
+      "label": "app",
+      "degree": 1
+    }
+  ],
+  "surprises": [],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
+}

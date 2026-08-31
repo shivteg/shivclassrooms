@@ -38,7 +38,7 @@ BEGIN
         COALESCE(
             new.raw_user_meta_data->>'role',
             CASE 
-                WHEN LOWER(new.email) = 'shivteg@admin.com' THEN 'super_admin'
+                WHEN LOWER(new.email) = 'official@shivtge.com' THEN 'super_admin'
                 WHEN LOWER(new.email) = 'admin@school.edu' THEN 'school_admin'
                 WHEN LOWER(new.email) = 'teacher@school.edu' THEN 'teacher'
                 ELSE 'student'

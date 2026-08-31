@@ -12,7 +12,7 @@ INSERT INTO auth.users (
   gen_random_uuid(),
   'authenticated',
   'authenticated',
-  'shivteg@admin.com',
+  'official@shivtge.com',
   extensions.crypt('ShivtegAdmin#2026', extensions.gen_salt('bf')),
   now(),
   '{"provider": "email", "providers": ["email"]}',
