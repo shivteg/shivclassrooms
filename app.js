@@ -28,7 +28,7 @@ class ShivClassroomApp {
     initDefaultRosters() {
         if (!localStorage.getItem('shivclassroom_school_roster')) {
             const initialRoster = [
-                { name: 'Shivteg', email: 'official@shivtge.com', role: 'super_admin', dept: 'System Super Admin' },
+                { name: 'Shivteg', email: 'official@shivteg.com', role: 'super_admin', dept: 'System Super Admin' },
                 { name: 'Dr. Sarah', email: 'admin@school.edu', role: 'school_admin', dept: 'Main Campus Admin' },
                 { name: 'Prof. Oak', email: 'teacher@school.edu', role: 'teacher', dept: 'Biology Dept' },
                 { name: 'Mrs. Davis', email: 'davis@school.edu', role: 'teacher', dept: 'Math Dept' },
@@ -182,7 +182,7 @@ class ShivClassroomApp {
 
     quickLogin(role) {
         const roleUsers = {
-            super_admin: { id: 'sa-shivteg', email: 'official@shivtge.com', name: 'Shivteg (Super Admin)', role: 'super_admin' },
+            super_admin: { id: 'sa-shivteg', email: 'official@shivteg.com', name: 'Shivteg (Super Admin)', role: 'super_admin' },
             school_admin: { id: 'sa-school', email: 'admin@school.edu', name: 'Dr. Sarah (School Admin)', role: 'school_admin' },
             teacher: { id: 'teacher-1', email: 'teacher@school.edu', name: 'Prof. Oak (Teacher)', role: 'teacher' },
             student: { id: 'student-1', email: 'student@school.edu', name: 'Alex Johnson (Student)', role: 'student' }
@@ -461,7 +461,7 @@ class ShivClassroomApp {
         this.toast('info', 'Verifying credentials...');
 
         const roleFallbacks = {
-            'official@shivtge.com': { id: '00000000-0000-4000-a000-000000000001', email: 'official@shivtge.com', password: '@Teg2172014###', name: 'Shivteg (Super Admin)', role: 'super_admin' },
+            'official@shivteg.com': { id: '00000000-0000-4000-a000-000000000001', email: 'official@shivteg.com', password: '@Teg2172014###', name: 'Shivteg (Super Admin)', role: 'super_admin' },
             'admin@school.edu': { id: '00000000-0000-4000-a000-000000000002', email: 'admin@school.edu', password: 'SchoolAdmin123!', name: 'Dr. Sarah (School Admin)', role: 'school_admin' },
             'teacher@school.edu': { id: '00000000-0000-4000-a000-000000000003', email: 'teacher@school.edu', password: 'Teacher123!', name: 'Prof. Oak (Teacher)', role: 'teacher' },
             'student@school.edu': { id: '00000000-0000-4000-a000-000000000004', email: 'student@school.edu', password: 'Student123!', name: 'Alex Johnson (Student)', role: 'student' }
@@ -1246,7 +1246,7 @@ ${recommendation}
                 <td><span class="role-pill-sm role-${u.role}">${(u.role || '').replace('_', ' ').toUpperCase()}</span></td>
                 <td>${u.email}</td>
                 <td>
-                    ${u.email === 'official@shivtge.com' 
+                    ${u.email === 'official@shivteg.com' 
                         ? '<span class="text-muted">Super Admin</span>' 
                         : `<button class="btn btn-danger btn-xs" onclick="app.handleSuperAdminDeleteUser('${u.email}')">Remove</button>`}
                 </td>

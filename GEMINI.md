@@ -16,7 +16,7 @@ The application enforces strict multi-tenant Row Level Security (RLS) across fou
 
 | Role Identifier | Role Name | Exact Email / Username | Fixed Password | Capabilities |
 | :--- | :--- | :--- | :--- | :--- |
-| `super_admin` | **Super Admin** | `official@shivtge.com`<br>*(Username: `shivteg`)* | `@Teg2172014###` | Global system oversight, create users with assigned roles & passwords, system analytics. |
+| `super_admin` | **Super Admin** | `official@shivteg.com`<br>*(Username: `shivteg`)* | `@Teg2172014###` | Global system oversight, create users with assigned roles & passwords, system analytics. |
 | `school_admin` | **School Admin** | `admin@school.edu`<br>*(Username: `school_admin`)* | `SchoolAdmin123!` | Campus-level admin, teacher & student roster management, campus analytics. |
 | `teacher` | **Teacher** | `teacher@school.edu`<br>*(Username: `teacher`)* | `Teacher123!` | Classroom creation, live emoji realtime monitoring, AI report generation. |
 | `student` | **Student** | `student@school.edu`<br>*(Username: `student`)* | `Student123!` | Classroom entry, live emoji feedback submission, confetti response UI. |
